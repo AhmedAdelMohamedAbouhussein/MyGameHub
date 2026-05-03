@@ -1,4 +1,5 @@
 import { useState } from "react";
+import BackButton from "../../components/BackButton/BackButton";
 import { toast } from "sonner";
 import apiClient from "../../utils/apiClient.js";
 import Header from "../../components/Header/Header";
@@ -25,6 +26,20 @@ const STEPS = [
         title: "Paste it in the field and click Sync",
         desc: "Paste your 64-character NPSSO value below and hit Sync. We use it once to fetch your library and then discard it.",
     },
+];
+
+const SYNC_INFO = [
+    { label: "Public Profile", status: "yes", desc: "Online ID and Avatar" },
+    { label: "Game Library", status: "yes", desc: "Digital and physical library history" },
+    { label: "Trophies & Progress", status: "yes", desc: "Level, rank, and individual trophies" },
+    { label: "Friends List", status: "yes", desc: "Sync your PSN friends to GameHub" },
+];
+
+const NOTES = [
+    "This is an unofficial, community-driven integration.",
+    "Sony does not offer a public OAuth API for 3rd parties.",
+    "The NPSSO token is a temporary session key used to access your public profile.",
+    "We never store your NPSSO — it is used for a single sync and then forgotten.",
 ];
 
 function SyncWithPSN() {
@@ -96,17 +111,49 @@ function SyncWithPSN() {
                     </button>
 
                     <div className="max-w-2xl mx-auto space-y-6 animate-slide-up">
+                        <BackButton variant="static" />
 
                         {/* Hero */}
-                        <div className="card-surface p-8 text-center space-y-4">
+                        <div className="card-surface p-8 text-center space-y-4 relative overflow-hidden">
+                            <div className="absolute top-4 right-4">
+                                <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-widest border border-amber-500/20">
+                                    Unofficial
+                                </span>
+                            </div>
                             <div className="w-20 h-20 rounded-2xl bg-blue-900/30 border border-blue-500/20 flex items-center justify-center mx-auto">
                                 <SiPlaystation className="text-blue-300" size={42} />
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-text-primary">Connect PlayStation</h1>
                                 <p className="text-sm text-text-secondary mt-1">
-                                    Sync your PSN library and trophies. Choose between the quick Sony link or the GameHub extension.
+                                    Sync your PSN library, trophies, and friends via the unofficial community API method.
                                 </p>
+                            </div>
+                        </div>
+
+                        {/* Why NPSSO */}
+                        <div className="flex gap-3 items-start bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4">
+                            <FaExclamationTriangle className="text-amber-400 mt-0.5 flex-shrink-0" size={13} />
+                            <p className="text-xs text-amber-300 leading-relaxed">
+                                <strong>Unofficial Integration Notice:</strong> Sony does not provide a public API for third-party apps. This integration uses a community-developed method (NPSSO) to sync your profile. It is secure and we never store your credentials.
+                            </p>
+                        </div>
+
+                        {/* Sync capabilities */}
+                        <div className="card-surface p-6 space-y-4">
+                            <h2 className="text-xs font-black uppercase tracking-widest text-text-muted">What's being synced</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {SYNC_INFO.map((item, i) => (
+                                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-midnight-900/40 border border-white/5">
+                                        <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-green-500/10 text-green-500">
+                                            ✓
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-bold text-text-primary leading-none">{item.label}</p>
+                                            <p className="text-[10px] text-text-muted mt-1">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
@@ -114,7 +161,7 @@ function SyncWithPSN() {
                         <div className="flex gap-3 items-start bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4">
                             <FaKey className="text-blue-400 mt-0.5 flex-shrink-0" size={13} />
                             <p className="text-xs text-blue-300 leading-relaxed">
-                                <strong>Why do we need this?</strong> Sony doesn't offer a public OAuth API. The NPSSO token is a short-lived session key that lets us read your public library on your behalf. We do not store it — it is used once and discarded.
+                                <strong>Why do we need this?</strong> Sony doesn't offer a public OAuth API for 3rd parties. The NPSSO token is a temporary session key that lets us read your library on your behalf. We do not store it — it is used once and discarded immediately.
                             </p>
                         </div>
 
@@ -211,6 +258,19 @@ function SyncWithPSN() {
                                 <SiPlaystation size={16} />
                                 {loading ? "Waiting for extension..." : "Sync via Extension"}
                             </button>
+                        </div>
+
+                        {/* Notes */}
+                        <div className="card-surface p-5 space-y-3">
+                            <h2 className="text-xs font-black uppercase tracking-widest text-text-muted">Good to know</h2>
+                            <ul className="space-y-2">
+                                {NOTES.map((note, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-xs text-text-muted leading-relaxed">
+                                        <span className="text-accent mt-0.5 flex-shrink-0">•</span>
+                                        {note}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
 
                     </div>

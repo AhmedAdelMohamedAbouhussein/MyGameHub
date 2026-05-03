@@ -182,7 +182,7 @@ function LandingPage() {
                       {/* GAME IMAGE */}
                       <div className="h-[400px] sm:h-[550px] md:h-[550px] lg:h-[550px] w-full overflow-hidden relative">
                         <img
-                          src={optimizeImage(src, 640)}
+                          src={optimizeImage(src, 1280)}
                           alt={title}
                           className="
                             w-full h-full object-cover

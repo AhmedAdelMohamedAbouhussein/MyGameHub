@@ -4,7 +4,7 @@
  */
 export const optimizeImage = (url, width = 640) => {
     if (!url || typeof url !== 'string') return url;
-    
+
     // Check if it's a RAWG media URL
     if (url.includes('media/games/')) {
         return url.replace('media/games/', `media/resize/${width}/-/games/`);
@@ -15,6 +15,6 @@ export const optimizeImage = (url, width = 640) => {
     if (url.includes('media/thumbnails/')) {
         return url.replace('media/thumbnails/', `media/resize/${width}/-/thumbnails/`);
     }
-    
+
     return url;
 };

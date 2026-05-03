@@ -1,22 +1,32 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useGoogleLogin } from '@react-oauth/google';
 import { toast } from "sonner";
 import apiClient from "../../utils/apiClient.js";
 import { Link, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff, FiRotateCcw, FiTrash } from "react-icons/fi";
-import { FaUserAstronaut } from "react-icons/fa";
+import { FaUserAstronaut, FaCheck, FaTimes } from "react-icons/fa";
 
 import Header from "../../components/Header/Header.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
+import AuthContext from "../../contexts/AuthContext.jsx";
 import LoadingScreen from "../../components/LoadingScreen/LoadingScreen.jsx";
 
 function SignupPage() {
   const navigate = useNavigate();
+  const { fetchUser } = useContext(AuthContext);
 
   const [formData, setFormData] = useState({ username: "", email: "", password: "" });
   const [feedback, setFeedback] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Password validation logic for real-time feedback
+  const passwordChecks = {
+    length: formData.password.length >= 8,
+    uppercase: /[A-Z]/.test(formData.password),
+    lowercase: /[a-z]/.test(formData.password),
+    number: /\d/.test(formData.password),
+  };
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -84,8 +94,9 @@ function SignupPage() {
         setLoading(true);
         const response = await apiClient.post(`/auth/google/signup`, { code });
         const message = response.data.message;
-        toast.success(message || "Account created! Redirecting to login...");
-        setTimeout(() => { navigate('/login'); }, 2000);
+        toast.success(message || "Account created and logged in!");
+        await fetchUser();
+        navigate('/');
       }
       catch (error) {
         if (error.response?.data) {
@@ -175,6 +186,16 @@ function SignupPage() {
               </button>
             </div>
 
+            {/* Password Strength Indicator */}
+            {formData.password.length > 0 && (
+              <div className="grid grid-cols-2 gap-2 p-3 bg-midnight-950/40 rounded-2xl border border-white/5 animate-in fade-in slide-in-from-top-2 duration-300">
+                <ValidationItem label="8+ Characters" valid={passwordChecks.length} />
+                <ValidationItem label="Uppercase" valid={passwordChecks.uppercase} />
+                <ValidationItem label="Lowercase" valid={passwordChecks.lowercase} />
+                <ValidationItem label="One Number" valid={passwordChecks.number} />
+              </div>
+            )}
+
             {/* Inline action feedback for complex flows */}
             {feedback && (
               <div className="rounded-lg border border-danger/30 bg-danger/5 p-4 space-y-3 animate-slide-down">
@@ -234,6 +255,15 @@ function SignupPage() {
         </div>
       </main>
       <Footer />
+    </div>
+  );
+}
+
+function ValidationItem({ label, valid }) {
+  return (
+    <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest transition-colors duration-300 ${valid ? 'text-emerald-400' : 'text-text-muted opacity-50'}`}>
+      {valid ? <FaCheck className="text-[7px]" /> : <FaTimes className="text-[7px]" />}
+      {label}
     </div>
   );
 }

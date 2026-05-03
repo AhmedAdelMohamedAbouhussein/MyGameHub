@@ -1,33 +1,35 @@
 import axios from "axios";
 import config from "../../config/env.js";
-import userModel from "../../models/User.js"; //TODO
+import userModel from "../../models/User.js";
+import { getUserFriendList } from "../allEpicInfo.js";
+import { uploadImageFromUrl } from "../../utils/imageUpload.js";
 
 const CLIENT_ID = config.epic.clientId;
 const CLIENT_SECRET = config.epic.clientSecret;
-const REDIRECT_URI = config.epic.redirectUrl;
+const REDIRECT_URI = config.epic.REDIRECT_URI;
 const FRONTEND_URL = config.frontendUrl;
 
-// Step 1️⃣ - Redirect user to Epic login
+// Step 1: Redirect to Epic login (Standard EAS Flow)
 export function syncWithEpic(req, res) {
   const authUrl = `https://www.epicgames.com/id/authorize?` +
     new URLSearchParams({
       client_id: CLIENT_ID,
       response_type: "code",
       redirect_uri: REDIRECT_URI,
-      scope: "basic_profile friends_list games_library",
+      scope: "basic_profile friends_list presence country",
     });
 
   res.redirect(authUrl);
 }
 
-// Step 2️⃣ - Handle Epic OAuth callback
+// Step 2: Handle OAuth callback and sync
 export async function epicReturn(req, res) {
   const userId = req.session.userId;
   const code = req.query.code;
-  if (!code) return res.status(400).json({ error: "Missing authorization code" });
+  if (!code) return res.redirect(`${FRONTEND_URL}/library?error=missing_code`);
 
   try {
-    // Exchange code for tokens
+    // 1. Exchange code for EAS token
     const tokenRes = await axios.post(
       "https://api.epicgames.dev/epic/oauth/v2/token",
       new URLSearchParams({
@@ -36,120 +38,67 @@ export async function epicReturn(req, res) {
         redirect_uri: REDIRECT_URI,
       }),
       {
-        auth: {
-          username: CLIENT_ID,
-          password: CLIENT_SECRET,
-        },
+        auth: { username: CLIENT_ID, password: CLIENT_SECRET },
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         timeout: 10000
       }
     );
 
-    console.log("Epic Token Response:", tokenRes.data);
+    const eosAccessToken = tokenRes.data.access_token;
+    const epicId = tokenRes.data.account_id;
 
-    const accessToken = tokenRes.data.access_token;
-    const refreshToken = tokenRes.data.refresh_token;
-    const refreshTokenExpiry = tokenRes.data.refresh_expires_at;
-
-    // Fetch user profile
-    const profileRes = await axios.get("https://api.epicgames.dev/epic/id/v2/account", {
-      headers: { Authorization: `Bearer ${accessToken}` },
+    // 2. Fetch User Profile (Modern v2 API)
+    const profileRes = await axios.get(`https://api.epicgames.dev/epic/id/v2/accounts?accountId=${epicId}`, {
+      headers: { Authorization: `Bearer ${eosAccessToken}` },
       timeout: 10000
     });
+    const profile = profileRes.data?.[0];
+    const displayName = profile?.displayName || "Epic User";
 
-    console.log("Epic Profile Response:", profileRes.data);
-
-    const epicId = profileRes.data.id;
-    const displayName = profileRes.data.displayName;
-
-    // ... (fetch games and friends logic exists above) ...
-
-    // 1. Update Linked Accounts
+    // 3. Update Database
     const dbUser = await userModel.findById(userId);
     if (!dbUser) return res.status(404).json({ error: "User not found" });
 
+    // Sync Friends
+    const existingFriends = dbUser.friends?.get("Epic") || [];
+    const friends = await getUserFriendList(eosAccessToken, epicId, existingFriends);
+
+    // Update Linked Account
     let linkedAccounts = dbUser.linkedAccounts || new Map();
     let epicAccounts = linkedAccounts.get("Epic") || [];
-
-    const existingAccIndex = epicAccounts.findIndex(acc => acc.accountId === epicId);
     const accountData = {
       accountId: epicId,
       displayName: displayName,
-      refreshToken: refreshToken,
-      expiresAt: new Date(Date.now() + (refreshTokenExpiry * 1000)),
+      avatar: null,
+      originalAvatarUrl: null,
       lastSync: new Date()
     };
-
-    if (existingAccIndex > -1) {
-      epicAccounts[existingAccIndex] = accountData;
-    } else {
-      epicAccounts.push(accountData);
-    }
+    const accIdx = epicAccounts.findIndex(acc => acc.accountId === epicId);
+    if (accIdx > -1) epicAccounts[accIdx] = { ...epicAccounts[accIdx], ...accountData };
+    else epicAccounts.push(accountData);
     linkedAccounts.set("Epic", epicAccounts);
     dbUser.linkedAccounts = linkedAccounts;
+    dbUser.markModified("linkedAccounts");
 
-    // 2. Update Friends
+    // Update Friends
     if (!dbUser.friends) dbUser.friends = new Map();
-    let currentEpicFriends = dbUser.friends.get("Epic") || [];
-    currentEpicFriends = currentEpicFriends.filter(f => f.linkedAccountId !== epicId);
+    let currentFriends = dbUser.friends.get("Epic") || [];
+    currentFriends = currentFriends.filter(f => f.linkedAccountId !== epicId);
+    const mappedFriends = friends.map(f => ({ ...f, linkedAccountId: epicId }));
+    dbUser.friends.set("Epic", [...currentFriends, ...mappedFriends]);
+    dbUser.markModified("friends");
 
-    const newFriends = friends.map(f => ({
-      ...f,
-      linkedAccountId: epicId,
-      status: "accepted",
-      source: "Epic"
-    }));
-    dbUser.friends.set("Epic", [...currentEpicFriends, ...newFriends]);
-
-    // 3. Update Owned Games
-    if (!dbUser.ownedGames) dbUser.ownedGames = new Map();
-    let epicGamesMap = dbUser.ownedGames.get("Epic") || new Map();
-
-    for (const game of ownedGames) {
-      if (!game || !game.gameId) continue;
-
-      const gameId = String(game.gameId);
-
-      let existingGame = epicGamesMap.get(gameId);
-      const ownerRecord = {
-        accountId: epicId,
-        accountName: displayName,
-        hoursPlayed: game.hoursPlayed,
-        lastPlayed: game.lastPlayed,
-        progress: game.progress || 0,
-        achievements: game.achievements || []
-      };
-
-      if (existingGame) {
-        const existingOwnerIndex = existingGame.owners.findIndex(o => o.accountId === epicId);
-        if (existingOwnerIndex > -1) {
-          existingGame.owners[existingOwnerIndex] = ownerRecord;
-        } else {
-          existingGame.owners.push(ownerRecord);
-        }
-        existingGame.maxProgress = Math.max(...existingGame.owners.map(o => o.progress || 0));
-      } else {
-        epicGamesMap.set(gameId, {
-          gameName: game.gameName,
-          gameId: gameId,
-          platform: "Epic",
-          coverImage: game.coverImage,
-          owners: [ownerRecord],
-          maxProgress: ownerRecord.progress,
-          totalHours: ownerRecord.hoursPlayed
-        });
-      }
+    // Update main profile picture if missing
+    if (!dbUser.profilePicture && epicAvatar) {
+      dbUser.profilePicture = epicAvatar;
     }
-    dbUser.ownedGames.set("Epic", epicGamesMap);
 
     await dbUser.save();
+    console.log(`Epic Sync complete for user ${displayName} (${epicId})`);
+    res.redirect(`${FRONTEND_URL}/library?sync=epic_success`);
 
-    res.redirect(`${FRONTEND_URL}/library`);
   } catch (error) {
-    console.error("Epic Auth Error:", error.response?.data || error.message);
-    res.status(500).json({
-      error: "Epic authentication failed",
-      details: error.response?.data || error.message,
-    });
+    console.error("Epic Sync Error:", error.response?.data || error.message);
+    res.redirect(`${FRONTEND_URL}/library?error=epic_sync_failed`);
   }
 }

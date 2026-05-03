@@ -4,6 +4,7 @@ import { getUserById, getUserIdByEmail, loginUser, getUserFriendList, getUserOwn
 import { softDeletUser, hardDeleteUser } from '../controllers/users/delete/softAndHardDeleteUser.js';
 import { getPublicProfile, toggleLike, getCommunityUsers } from '../controllers/users/record/profileController.js';
 import { toggleWishlist, getWishlist, checkWishlistStatus } from '../controllers/users/record/wishlistController.js';
+import { setInitialPassword } from '../controllers/users/update/setInitialPassword.js';
 import requireAuth from '../middleware/requireAuth.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
 
@@ -506,5 +507,6 @@ router.post('/wishlist/toggle', requireAuth, toggleWishlist);
  *     tags: [Users]
  */
 router.get('/wishlist/status/:gameId', requireAuth, checkWishlistStatus);
+router.post('/set-initial-password', requireAuth, setInitialPassword);
 
 export default router;

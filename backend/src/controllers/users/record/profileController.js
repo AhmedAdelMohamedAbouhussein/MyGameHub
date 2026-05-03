@@ -30,6 +30,9 @@ export const getPublicProfile = async (req, res, next) => {
             profileVisibility: targetUser.profileVisibility,
             allowPublicFriendRequests: targetUser.allowPublicFriendRequests !== false, // default true
             profileBackground: targetUser.profileBackground || null,
+            themeSongId: targetUser.themeSongId || null,
+            masterpieceGame: targetUser.masterpieceGame || null,
+            signupDate: targetUser.signupDate,
             isLiked: targetUser.likes?.includes(currentUserPublicID),
             likesCount: targetUser.likes?.length || 0,
             friendsCount: 0,
@@ -187,7 +190,7 @@ export const getCommunityUsers = async (req, res, next) => {
     try {
         const { search } = req.query;
         let query = { profileVisibility: "public", isDeleted: false };
-        
+
         if (search) {
             if (typeof search !== 'string') {
                 return res.status(400).json({ message: "Search parameter must be a string" });

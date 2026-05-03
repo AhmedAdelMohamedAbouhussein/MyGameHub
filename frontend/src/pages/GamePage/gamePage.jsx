@@ -8,7 +8,8 @@ import PriceHistoryChart from "../../components/PriceHistoryChart/PriceHistoryCh
 import LoadingScreen from "../../components/LoadingScreen/LoadingScreen.jsx";
 import Header from "../../components/Header/Header.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
-import { FaCalendarAlt, FaClock, FaStar, FaExternalLinkAlt, FaTag, FaTools, FaBuilding, FaArrowRight, FaGamepad, FaArrowLeft } from "react-icons/fa";
+import { FaCalendarAlt, FaClock, FaStar, FaExternalLinkAlt, FaTag, FaTools, FaBuilding, FaArrowRight, FaGamepad } from "react-icons/fa";
+import BackButton from "../../components/BackButton/BackButton";
 
 const STORE_COLORS = {
     "Steam": "bg-blue-600/20 border-blue-500/30 text-blue-400 hover:bg-blue-600/30",
@@ -95,14 +96,7 @@ const GamePage = () => {
 
             <main className="flex-1 relative">
                 {/* Back Button */}
-                <div className="absolute top-6 left-4 sm:left-8 z-50">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 px-4 py-2 bg-midnight-900/80 backdrop-blur-md border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest text-text-secondary hover:text-white hover:bg-midnight-800 hover:border-white/20 transition-all shadow-xl"
-                    >
-                        <FaArrowLeft /> Back
-                    </button>
-                </div>
+                <BackButton />
 
                 {/* 1. Immersive Hero Section */}
                 <section className="relative min-h-[50vh] sm:min-h-[60vh] lg:min-h-[70vh] flex items-end px-4 sm:px-0">

@@ -15,8 +15,8 @@ export const authUser = async (req, res, next) =>
             return next(error);
         }
 
-        // Fetch user info from DB using the session's userId
-        const user = await userModel.findById(req.session.userId)
+        // Fetch user info from DB using the session's userId, including password for state check
+        const user = await userModel.findById(req.session.userId).select("+password");
 
         if (!user) 
         {
@@ -28,7 +28,7 @@ export const authUser = async (req, res, next) =>
         }
 
         console.log("authenticated")
-        return res.json({ user: user }); // send user data to frontend
+        return res.json({ user: user }); // toJSON transform handles cleanup and hasPassword
     } 
     catch (err) 
     {

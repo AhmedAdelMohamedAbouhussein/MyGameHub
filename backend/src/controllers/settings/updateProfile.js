@@ -7,24 +7,41 @@ export const updateProfile = async (req, res, next) => {
             return res.status(401).json({ message: "Unauthorized" });
         }
 
-        const { username, bio, visibility, allowPublicFriendRequests, favoriteGames } = req.body;
+        const { username, bio, visibility, allowPublicFriendRequests, favoriteGames, themeSongId, masterpieceGame } = req.body;
 
         const updateData = {};
-        if (username !== undefined) updateData.name = username;
-        if (bio !== undefined) updateData.bio = bio;
-        if (visibility !== undefined) updateData.profileVisibility = visibility;
-        if (allowPublicFriendRequests !== undefined) updateData.allowPublicFriendRequests = allowPublicFriendRequests;
+        if (username !== undefined) updateData.name = String(username).trim().substring(0, 50);
+        if (bio !== undefined) updateData.bio = String(bio).trim().substring(0, 300);
+        if (visibility !== undefined) {
+            updateData.profileVisibility = ["public", "private"].includes(visibility) ? visibility : "public";
+        }
+        if (allowPublicFriendRequests !== undefined) updateData.allowPublicFriendRequests = !!allowPublicFriendRequests;
+        if (themeSongId !== undefined) updateData.themeSongId = String(themeSongId).trim().substring(0, 50);
+        
+        if (masterpieceGame !== undefined) {
+            if (masterpieceGame === null) {
+                updateData.masterpieceGame = null;
+            } else {
+                const quote = String(masterpieceGame.quote || "").trim().substring(0, 100);
+                updateData.masterpieceGame = {
+                    platform: String(masterpieceGame.platform || "").trim(),
+                    gameId: String(masterpieceGame.gameId || "").trim(),
+                    gameName: String(masterpieceGame.gameName || "").trim(),
+                    coverImage: String(masterpieceGame.coverImage || "").trim(),
+                    quote: quote
+                };
+            }
+        }
+
         if (favoriteGames !== undefined) {
-            // Validate favoriteGames is an array
             if (Array.isArray(favoriteGames)) {
-                // Ensure max 4 games
                 updateData.favoriteGames = favoriteGames.slice(0, 4).map(game => ({
-                    platform: game.platform,
-                    gameId: game.gameId,
-                    gameName: game.gameName,
-                    coverImage: game.coverImage,
-                    hoursPlayed: game.hoursPlayed || 0,
-                    progress: game.progress || 0
+                    platform: String(game.platform || "").trim(),
+                    gameId: String(game.gameId || "").trim(),
+                    gameName: String(game.gameName || game.title || "").trim(),
+                    coverImage: String(game.coverImage || "").trim(),
+                    hoursPlayed: Number(game.hoursPlayed) || 0,
+                    progress: Number(game.progress) || 0
                 }));
             }
         }

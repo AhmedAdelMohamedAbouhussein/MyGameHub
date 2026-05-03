@@ -132,12 +132,12 @@ function Card(props) {
 
                         {/* Unified Ownership Badge */}
                         <div className="pt-2 border-t border-white/5 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                           {owners.slice(0, 3).map((owner, i) => (
-                               <div key={i} className="flex-shrink-0 w-5 h-5 rounded-md bg-midnight-800 border border-white/5 flex items-center justify-center overflow-hidden" title={owner.accountName}>
-                                   {owner.avatar ? <img src={owner.avatar} className="w-full h-full object-cover" /> : <div className="text-[7px] font-black">{owner.accountName?.charAt(0)}</div>}
-                               </div>
-                           ))}
-                           {owners.length > 3 && <span className="text-[8px] text-text-muted font-black">+{owners.length - 3}</span>}
+                            {owners.slice(0, 3).map((owner, i) => (
+                                <div key={i} className="flex-shrink-0 w-5 h-5 rounded-md bg-midnight-800 border border-white/5 flex items-center justify-center overflow-hidden" title={owner.accountName}>
+                                    {owner.avatar ? <img src={owner.avatar} className="w-full h-full object-cover" /> : <div className="text-[7px] font-black">{owner.accountName?.charAt(0)}</div>}
+                                </div>
+                            ))}
+                            {owners.length > 3 && <span className="text-[8px] text-text-muted font-black">+{owners.length - 3}</span>}
                         </div>
                     </div>
                 </>

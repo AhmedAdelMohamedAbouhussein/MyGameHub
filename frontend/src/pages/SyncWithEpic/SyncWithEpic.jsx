@@ -4,29 +4,37 @@ import Aside from "../../components/Aside/Aside";
 import { SiEpicgames } from "react-icons/si";
 import { FaBars, FaExclamationTriangle } from "react-icons/fa";
 import { useState } from "react";
+import BackButton from "../../components/BackButton/BackButton";
 
 const STEPS = [
     {
         num: 1,
-        title: "Click the button below",
-        desc: "You'll be redirected to Epic Games' official login page. Sign in with your Epic account credentials.",
+        title: "Sign in with Epic",
+        desc: "Click the button below to be redirected to Epic Games' official secure login page.",
     },
     {
         num: 2,
-        title: "Authorise GameHub",
-        desc: "Epic will show a permission screen asking you to allow GameHub to read your profile. Click Accept / Authorise.",
+        title: "Authorise Profile Access",
+        desc: "Allow GameHub to see your basic profile (Display Name) and your Friends list.",
     },
     {
         num: 3,
-        title: "You're done!",
-        desc: "You'll be redirected back to GameHub and your Epic library will sync automatically.",
+        title: "Social Sync",
+        desc: "You'll be redirected back and your Epic friends will appear in your GameHub friends list.",
     },
 ];
 
+const SYNC_INFO = [
+    { label: "Public Profile", status: "yes", desc: "Display Name only" },
+    { label: "Friends List", status: "yes", desc: "Sync your Epic friends to GameHub" },
+    { label: "Avatars", status: "no", desc: "Restricted by Epic Games API" },
+    { label: "Game Library", status: "no", desc: "Full library sync is restricted by Epic" },
+];
+
 const NOTES = [
-    "Epic Games uses OAuth 2.0 — we never see or store your password.",
-    "Only games in your Epic library are imported. Free games claimed via the Epic Store are included.",
-    "If you linked your Epic account to an external provider (Google, Facebook, etc.), use that same login.",
+    "Epic Games uses official OAuth 2.0 — we never see or store your password.",
+    "This sync focuses on social features and profile linking.",
+    "Full library sync is currently restricted by Epic Games for all third-party applications.",
 ];
 
 function SyncWithEpic() {
@@ -45,6 +53,7 @@ function SyncWithEpic() {
                 <Aside isOpen={mobileAsideOpen} onClose={() => setMobileAsideOpen(false)} />
                 <main className="flex-1 px-4 py-12">
                     <div className="max-w-2xl mx-auto space-y-6 animate-slide-up">
+                        <BackButton variant="static" />
 
                         <div className="flex items-center lg:hidden mb-4">
                             <button
@@ -62,7 +71,25 @@ function SyncWithEpic() {
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-text-primary">Connect Epic Games</h1>
-                                <p className="text-sm text-text-secondary mt-1">Link your Epic Games account via OAuth to sync your game library including all free claimed titles.</p>
+                                <p className="text-sm text-text-secondary mt-1">Link your Epic Games account to sync your social profile and friends list.</p>
+                            </div>
+                        </div>
+
+                        {/* Sync capabilities */}
+                        <div className="card-surface p-6 space-y-4">
+                            <h2 className="text-xs font-black uppercase tracking-widest text-text-muted">What's being synced</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {SYNC_INFO.map((item, i) => (
+                                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-midnight-900/40 border border-white/5">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${item.status === 'yes' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                            {item.status === 'yes' ? '✓' : '✕'}
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-bold text-text-primary leading-none">{item.label}</p>
+                                            <p className="text-[10px] text-text-muted mt-1">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 

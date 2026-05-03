@@ -3,24 +3,37 @@ import Footer from "../../components/Footer/Footer";
 import Aside from "../../components/Aside/Aside";
 import { FaSteam, FaExternalLinkAlt, FaCheckCircle, FaExclamationTriangle, FaBars } from "react-icons/fa";
 import { useState } from "react";
+import BackButton from "../../components/BackButton/BackButton";
 
 const STEPS = [
     {
         num: 1,
-        title: "Make your Steam profile public",
-        desc: 'Go to your Steam profile → Edit Profile → Privacy Settings. Set "Game details" to Public. Without this, Steam will not share your library data.',
-        warn: true,
+        title: "Sign in with Steam",
+        desc: "Click the button below to be redirected to Steam's official secure login page.",
     },
     {
         num: 2,
-        title: "Click the button below",
-        desc: "You'll be redirected to Steam's official login page. Sign in with your Steam credentials — we never see your password.",
+        title: "Authorise Profile Access",
+        desc: "Allow GameHub to see your public profile, game library, and friends list.",
     },
     {
         num: 3,
         title: "You're done!",
-        desc: "After authorising, you'll be sent back here and your library will sync automatically.",
+        desc: "You'll be redirected back and your Steam library will sync automatically.",
     },
+];
+
+const SYNC_INFO = [
+    { label: "Steam Profile", status: "yes", desc: "Persona Name and Avatar" },
+    { label: "Game Library", status: "yes", desc: "Sync your entire Steam collection" },
+    { label: "Achievements", status: "yes", desc: "Sync your unlocked trophies and progress" },
+    { label: "Friends List", status: "yes", desc: "Sync your Steam friends to GameHub" },
+];
+
+const NOTES = [
+    "Steam sync uses official OpenID — we never see or store your password.",
+    "Only games in your Steam library are imported.",
+    "Ensure your 'Game details' are set to Public in Steam Privacy Settings.",
 ];
 
 function SyncWithSteam() {
@@ -39,6 +52,7 @@ function SyncWithSteam() {
                 <Aside isOpen={mobileAsideOpen} onClose={() => setMobileAsideOpen(false)} />
                 <main className="flex-1 px-4 py-12">
                     <div className="max-w-2xl mx-auto space-y-6 animate-slide-up">
+                        <BackButton variant="static" />
 
                         <div className="flex items-center lg:hidden mb-4">
                             <button
@@ -56,35 +70,50 @@ function SyncWithSteam() {
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-text-primary">Connect Steam</h1>
-                                <p className="text-sm text-text-secondary mt-1">Sync your Steam library and achievements with GameHub via Steam's official OAuth login.</p>
+                                <p className="text-sm text-text-secondary mt-1">Sync your Steam library, achievements, and friends via the official secure login.</p>
                             </div>
                         </div>
 
-                        {/* Steps */}
-                        <div className="card-surface p-6 space-y-5">
-                            <h2 className="text-xs font-black uppercase tracking-widest text-text-muted">Before you start</h2>
-                            {STEPS.map(s => (
-                                <div key={s.num} className="flex gap-4">
-                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm ${s.warn ? 'bg-amber-500/15 text-amber-400' : 'bg-accent/10 text-accent'}`}>
-                                        {s.num}
+                        {/* Sync capabilities */}
+                        <div className="card-surface p-6 space-y-4">
+                            <h2 className="text-xs font-black uppercase tracking-widest text-text-muted">What's being synced</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {SYNC_INFO.map((item, i) => (
+                                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-midnight-900/40 border border-white/5">
+                                        <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-green-500/10 text-green-500">
+                                            ✓
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-bold text-text-primary leading-none">{item.label}</p>
+                                            <p className="text-[10px] text-text-muted mt-1">{item.desc}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                                            {s.title}
-                                            {s.warn && <FaExclamationTriangle className="text-amber-400" size={12} />}
-                                        </p>
-                                        <p className="text-xs text-text-muted mt-0.5 leading-relaxed">{s.desc}</p>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
 
                         {/* Privacy warning */}
                         <div className="flex gap-3 items-start bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4">
                             <FaExclamationTriangle className="text-amber-400 mt-0.5 flex-shrink-0" size={14} />
                             <p className="text-xs text-amber-300 leading-relaxed">
-                                <strong>Your profile must be set to Public.</strong> Steam only exposes your game list when your privacy settings allow it. You can set it back to private after syncing — but your library won't update until you switch it public again.
+                                <strong>Privacy Notice:</strong> Ensure your Steam "Game details" are set to <strong>Public</strong> in your Steam Privacy settings, otherwise Steam will not share your library data.
                             </p>
+                        </div>
+
+                        {/* Steps */}
+                        <div className="card-surface p-6 space-y-5">
+                            <h2 className="text-xs font-black uppercase tracking-widest text-text-muted">How it works</h2>
+                            {STEPS.map(s => (
+                                <div key={s.num} className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm bg-accent/10 text-accent">
+                                        {s.num}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-text-primary">{s.title}</p>
+                                        <p className="text-xs text-text-muted mt-0.5 leading-relaxed">{s.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
                         {/* Privacy settings link */}
@@ -109,6 +138,19 @@ function SyncWithSteam() {
                                     allowFullScreen
                                 />
                             </div>
+                        </div>
+
+                        {/* Notes */}
+                        <div className="card-surface p-5 space-y-3">
+                            <h2 className="text-xs font-black uppercase tracking-widest text-text-muted">Good to know</h2>
+                            <ul className="space-y-2">
+                                {NOTES.map((note, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-xs text-text-muted leading-relaxed">
+                                        <span className="text-accent mt-0.5 flex-shrink-0">•</span>
+                                        {note}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
 
                         {/* CTA */}

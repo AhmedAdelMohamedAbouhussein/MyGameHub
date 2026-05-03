@@ -158,7 +158,7 @@ function ManageFriendsPage() {
         >
             <div className="relative">
                 <img
-                    src={friend.avatar || friend.profilePicture || "https://digitalhealthskills.com/wp-content/uploads/2022/11/3da39-no-user-image-icon-27.png"}
+                    src={friend.avatar || friend.profilePicture || "https://res.cloudinary.com/dvbmaonhc/image/upload/v1777487049/avatars/no_user.png"}
                     alt={friend.displayName}
                     className="w-14 h-14 rounded-2xl object-cover ring-2 ring-midnight-600 group-hover:ring-accent/40 shadow-xl transition-all"
                 />

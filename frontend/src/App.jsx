@@ -11,6 +11,7 @@ import ResetPassword from './pages/ResetPassword/ResetPassword';
 import ManagePublicProfile from './pages/ManagePublicProfile/ManagePublicProfile.jsx';
 import LoadingScreen from "./components/LoadingScreen/LoadingScreen";
 import CommunityPage from './pages/CommunityPage/CommunityPage.jsx';
+import SetPassword from './pages/SetPassword/SetPassword.jsx';
 
 // Private pages (lazy loaded)
 const SyncWithSteam = lazy(() => import("./pages/SyncWithSteam/SyncWithSteam"));
@@ -32,6 +33,11 @@ function App() {
     const { user } = useContext(AuthContext);
     const location = useLocation(); // 🔑 current location
 
+    // Force Google users without a password to set one before proceeding
+    if (user && user.hasPassword === false && location.pathname !== "/set-password") {
+        return <Navigate to="/set-password" replace />;
+    }
+
     return (
         <Suspense fallback={<LoadingScreen />}>
             <Routes>
@@ -43,6 +49,7 @@ function App() {
                 <Route path="/resetpassword" element={<ResetPassword />} />
                 <Route path="/profile/:publicID" element={<ViewProfilePage />} />
                 <Route path="/community" element={<CommunityPage />} />
+                <Route path="/set-password" element={user && !user.hasPassword ? <SetPassword /> : <Navigate to="/" replace />} />
 
                 {/* Auth pages */}
                 <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />

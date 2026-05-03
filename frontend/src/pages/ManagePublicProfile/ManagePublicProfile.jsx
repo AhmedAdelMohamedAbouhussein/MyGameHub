@@ -11,7 +11,9 @@ import LoadingScreen from "../../components/LoadingScreen/LoadingScreen";
 import AuthContext from "../../contexts/AuthContext.jsx";
 import getCroppedImg from "../../utils/cropImage";
 
-import { FaArrowLeft, FaImage, FaCheck, FaGamepad, FaLock, FaGlobe, FaUser } from "react-icons/fa";
+import { FaImage, FaCheck, FaGamepad, FaLock, FaGlobe, FaUser, FaMusic, FaTrophy } from "react-icons/fa";
+import { SiSpotify } from "react-icons/si";
+import BackButton from "../../components/BackButton/BackButton";
 
 function ManagePublicProfile() {
     const { user, setUser } = useContext(AuthContext);
@@ -45,6 +47,9 @@ function ManagePublicProfile() {
 
     // Favorite Games state
     const [favoriteGames, setFavoriteGames] = useState(user?.favoriteGames || []);
+    const [themeSongUrl, setThemeSongUrl] = useState(user?.themeSongId ? `https://open.spotify.com/track/${user.themeSongId}` : "");
+    const [masterpieceGame, setMasterpieceGame] = useState(user?.masterpieceGame || null);
+    const [masterpieceQuote, setMasterpieceQuote] = useState(user?.masterpieceGame?.quote || "");
 
 
     const fetchOwnedGames = async () => {
@@ -68,10 +73,10 @@ function ManagePublicProfile() {
                     const match = game.totalHours.match(/(\d+)h/);
                     if (match) hoursNum = parseInt(match[1]);
                 }
-                allGames.push({ 
-                    platform, 
-                    gameId: id, 
-                    gameName: game.title || game.gameName, 
+                allGames.push({
+                    platform,
+                    gameId: id,
+                    gameName: game.title || game.gameName,
                     coverImage: game.coverImage,
                     hoursPlayed: hoursNum,
                     progress: game.maxProgress || 0
@@ -131,6 +136,12 @@ function ManagePublicProfile() {
         }
     };
 
+    const extractSpotifyId = (url) => {
+        if (!url) return null;
+        const match = url.match(/track\/([a-zA-Z0-9]+)/);
+        return match ? match[1] : null;
+    };
+
     const saveChanges = async () => {
         setLoading(true);
         try {
@@ -157,7 +168,9 @@ function ManagePublicProfile() {
             // Update settings
             const payload = {
                 allowPublicFriendRequests,
-                favoriteGames: favoriteGames
+                favoriteGames: favoriteGames,
+                themeSongId: extractSpotifyId(themeSongUrl),
+                masterpieceGame: masterpieceGame ? { ...masterpieceGame, quote: masterpieceQuote } : null
             };
             if (namechange) payload.username = username;
             if (biochange) payload.bio = bio;
@@ -184,9 +197,7 @@ function ManagePublicProfile() {
             <Header />
             <main className="flex-1 max-w-5xl mx-auto px-4 py-8 w-full">
 
-                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-text-muted hover:text-white mb-6 text-sm font-bold transition-colors">
-                    <FaArrowLeft /> Back
-                </button>
+                <BackButton variant="static" />
 
                 <div className="flex items-center gap-4 mb-8">
                     <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent border border-accent/20">
@@ -211,12 +222,12 @@ function ManagePublicProfile() {
                                     <div className="flex flex-col items-center gap-4 group">
                                         <div className="relative">
                                             <img
-                                                src={profilePic || user?.profilePicture || "https://digitalhealthskills.com/wp-content/uploads/2022/11/3da39-no-user-image-icon-27.png"}
+                                                src={profilePic || user?.profilePicture || "https://res.cloudinary.com/dvbmaonhc/image/upload/v1777487049/avatars/no_user.png"}
                                                 alt="Profile"
                                                 className="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover ring-4 ring-accent/20 group-hover:ring-accent/50 transition-all duration-500 shadow-2xl"
                                             />
-                                            <label 
-                                                htmlFor="profilePicUpload" 
+                                            <label
+                                                htmlFor="profilePicUpload"
                                                 className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer"
                                             >
                                                 <FaImage className="text-white text-2xl mb-2 translate-y-2 group-hover:translate-y-0 transition-transform duration-300" />
@@ -339,6 +350,40 @@ function ManagePublicProfile() {
                         </div>
                     </div>
 
+                    {/* Music & Ambience */}
+                    <div className="card-surface p-6 sm:p-8">
+                        <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                            <SiSpotify className="text-[#1DB954]" /> Profile Theme Song
+                        </h2>
+                        <p className="text-xs text-text-muted mb-6">Set the mood with a Spotify track. Visitors can listen while viewing your profile.</p>
+
+                        <div className="space-y-4">
+                            <div className="relative">
+                                <SiSpotify className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1DB954]" />
+                                <input
+                                    type="text"
+                                    placeholder="Paste Spotify Track URL (e.g. https://open.spotify.com/track/...)"
+                                    value={themeSongUrl}
+                                    onChange={(e) => setThemeSongUrl(e.target.value)}
+                                    className="input-field w-full pl-12"
+                                />
+                            </div>
+                            {extractSpotifyId(themeSongUrl) && (
+                                <div className="rounded-2xl overflow-hidden border border-white/5 bg-black/20 w-full">
+                                    <iframe
+                                        src={`https://open.spotify.com/embed/track/${extractSpotifyId(themeSongUrl)}?utm_source=generator&theme=0`}
+                                        width="100%"
+                                        height="80"
+                                        frameBorder="0"
+                                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                        loading="lazy"
+                                        className="w-full"
+                                    ></iframe>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Favorite Games Picker */}
                     <div className="card-surface p-6 sm:p-8">
                         <div className="flex justify-between items-end mb-6">
@@ -377,6 +422,57 @@ function ManagePublicProfile() {
                                 })}
                             </div>
                         )}
+                    </div>
+
+                    {/* Masterpiece Slot */}
+                    <div className="card-surface p-6 sm:p-8">
+                        <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                            <FaTrophy className="text-amber-400" /> The Masterpiece
+                        </h2>
+                        <p className="text-xs text-text-muted mb-6">Highlight the game that defines you as a gamer and add a custom quote.</p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">Select from Library</h3>
+                                <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {allGames.length > 0 ? (
+                                        allGames.map((game, idx) => (
+                                            <div
+                                                key={idx}
+                                                onClick={() => setMasterpieceGame(game)}
+                                                className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${masterpieceGame?.gameId === game.gameId ? 'border-amber-400 scale-95' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                            >
+                                                <img src={game.coverImage} alt={game.gameName} className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                    <p className="text-[10px] font-black text-white text-center px-2">{game.gameName}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-xs text-text-muted col-span-2 py-4 italic text-center border border-dashed border-white/10 rounded-xl">Pick some favorite games first!</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">Masterpiece Quote</h3>
+                                <textarea
+                                    value={masterpieceQuote}
+                                    onChange={(e) => setMasterpieceQuote(e.target.value)}
+                                    className="input-field w-full min-h-[100px] text-sm italic"
+                                    placeholder="e.g. 'The game that changed my life forever...'"
+                                    maxLength={100}
+                                />
+                                <p className="text-[10px] text-right text-text-muted">{masterpieceQuote.length} / 100</p>
+
+                                {masterpieceGame && (
+                                    <div className="p-4 rounded-xl bg-amber-400/10 border border-amber-400/20">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-1">Preview</p>
+                                        <p className="text-xs text-white">Featured: <span className="font-bold">{masterpieceGame.gameName}</span></p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex justify-end pt-4">

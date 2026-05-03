@@ -9,6 +9,7 @@ import AuthContext from "../../contexts/AuthContext";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import LoadingScreen from "../../components/LoadingScreen/LoadingScreen";
+import BackButton from "../../components/BackButton/BackButton";
 
 const bronzeIcon = "https://res.cloudinary.com/dvbmaonhc/image/upload/v1777400806/site_assets/bronze.webp";
 const silverIcon = "https://res.cloudinary.com/dvbmaonhc/image/upload/v1777400819/site_assets/silver.webp";
@@ -188,6 +189,7 @@ function OwnedGamesDetails() {
       </div>
 
       <main className="flex-1 relative z-10">
+        <BackButton />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
 
           {/* Hero Section */}
@@ -298,16 +300,16 @@ function OwnedGamesDetails() {
             <div className="absolute inset-0 bg-midnight-900/40 backdrop-blur-2xl rounded-[2.5rem]" />
 
             <div className="relative p-6 sm:p-10">
-              <div className="flex items-center justify-between mb-12 pb-6 border-b border-white/10">
-                <h2 className="text-3xl font-black text-text-primary uppercase tracking-tighter flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between mb-12 pb-6 border-b border-white/10 gap-6">
+                <h2 className="text-2xl sm:text-3xl font-black text-text-primary uppercase tracking-tighter flex items-center gap-4">
                   <div className="p-3 bg-accent/20 rounded-2xl text-accent shadow-[0_0_15px_rgba(59,130,246,0.3)]">
                     <FaGamepad size={20} />
                   </div>
                   Achievement Logs
                 </h2>
                 {selectedOwner && (
-                  <div className="text-right flex flex-col items-end">
-                    <p className="text-[11px] font-black text-accent uppercase tracking-[0.3em] mb-1">Completion Index</p>
+                  <div className="text-center sm:text-right flex flex-col items-center sm:items-end">
+                    <p className="text-[10px] sm:text-[11px] font-black text-accent uppercase tracking-[0.3em] mb-1">Completion Index</p>
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl font-black text-text-primary tabular-nums">{(selectedOwner.achievements?.filter(a => a.unlocked).length || 0)}</span>
                       <span className="text-text-muted font-bold">/ {selectedOwner.achievements?.length || 0}</span>

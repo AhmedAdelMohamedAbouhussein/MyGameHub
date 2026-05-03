@@ -136,6 +136,17 @@ const UserSchema = new mongoose.Schema({
         type: String, // URL to uploaded background image
         default: null
     },
+    themeSongId: {
+        type: String, // Spotify Track ID
+        default: null
+    },
+    masterpieceGame: {
+        platform: { type: String },
+        gameId: { type: String },
+        gameName: { type: String },
+        coverImage: { type: String },
+        quote: { type: String, maxlength: 100 }
+    },
     isDeleted: {
         type: Boolean,
         default: false
@@ -248,6 +259,7 @@ const UserSchema = new mongoose.Schema({
 UserSchema.set('toJSON',
     {
         transform: function (doc, ret, options) {
+            ret.hasPassword = !!(doc.password || (doc._doc && doc._doc.password));
             delete ret.password;
 
             // Clean up linkedAccounts tokens in the JSON response
@@ -272,8 +284,7 @@ UserSchema.set('toJSON',
             delete ret.isVerified;
             delete ret.role;
             delete ret.__v;
-            delete ret._id
-
+            delete ret._id;
             if (ret.resendCount) {
                 delete ret.resendCount.emailVerification?.count;
                 delete ret.resendCount.emailVerification?.lastReset;
@@ -287,6 +298,12 @@ UserSchema.set('toJSON',
             return ret;
         }
     });
+
+// Also apply the same transformation to toObject for consistency
+UserSchema.set('toObject', {
+    getters: true,
+    transform: UserSchema.get('toJSON').transform
+});
 
 
 UserSchema.pre('validate', async function (next) {
