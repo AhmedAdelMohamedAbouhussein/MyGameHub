@@ -2,7 +2,8 @@ import axios from 'axios';
 import passport from "passport";
 import SteamStrategy from "passport-steam";
 import config from '../../config/env.js'
-import userModel from "../../models/User.js"; //TODO
+import userModel from "../../models/User.js";
+import logger from "../../utils/logger.js";
 
 import { getOwnedGames, getUserAchievements, getUserFriendList } from '../allSteamInfo.js'
 import { uploadImageFromUrl } from "../../utils/imageUpload.js";
@@ -42,7 +43,7 @@ passport.use(
                     profile.summary = players[0];
                 }
                 else {
-                    console.warn("No players returned from Steam API:", response.data);
+                    logger.warn({ data: response.data }, 'No players returned from Steam API');
                     profile.summary = null;
                 }
                 return done(null, profile);
@@ -71,8 +72,8 @@ export const syncWithSteam = async (req, res, next) => {
         })(req, res, next);
     }
     catch (error) {
-        const err = new Error('Error syncing with Steam:');
-        next(err);
+        error.logContext = { userId: hashId(userId), platform: "Steam" };
+        next(error);
     }
 }
 
@@ -87,7 +88,7 @@ export const steamReturn = (req, res, next) => {
         if (!user) {
             return res.redirect("/"); // failed login
         }
-        console.log(user);
+
 
         // ✅ Steam login succeeded
         try {
@@ -193,7 +194,7 @@ export const steamReturn = (req, res, next) => {
             currentSteamFriends = currentSteamFriends.filter(f => f.linkedAccountId !== steamId);
 
             const newFriends = friendsList.map(f => ({
-                user: null, 
+                user: null,
                 externalId: f.externalId,
                 linkedAccountId: steamId,
                 displayName: f.displayName,
@@ -219,7 +220,7 @@ export const steamReturn = (req, res, next) => {
             res.redirect(`${APP_FRONTEND_URL}/library`)
         }
         catch (dbErr) {
-            console.error("Steam sync database error:", dbErr);
+            dbErr.logContext = { platform: "Steam" };
             return next(dbErr);
         }
     })(req, res, next); // <-- still need this

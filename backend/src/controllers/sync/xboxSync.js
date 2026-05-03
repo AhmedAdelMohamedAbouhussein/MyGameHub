@@ -2,6 +2,7 @@ import axios from 'axios';
 import config from '../../config/env.js'
 import userModel from "../../models/User.js";
 import { uploadImageFromUrl } from "../../utils/imageUpload.js";
+import logger from "../../utils/logger.js";
 
 
 const APP_FRONTEND_URL = config.frontendUrl;
@@ -220,7 +221,7 @@ export async function xboxReturn(req, res) {
 
     }
     catch (err) {
-        console.error("Xbox Auth Error:", err.response?.data || err.message);
+        logger.error({ userId: hashId(userId), err }, 'Xbox auth error');
         res.status(500).json({
             error: "Xbox authentication failed",
             details: err.response?.data || err.message,

@@ -42,7 +42,6 @@ export async function profileImage(req, res, next) {
             profilePicture: updatedUser.profilePicture,
         });
     } catch (err) {
-        console.error("Profile image upload error:", err);
         next(err);
     }
 }

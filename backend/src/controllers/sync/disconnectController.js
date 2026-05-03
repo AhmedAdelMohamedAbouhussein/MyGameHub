@@ -1,4 +1,6 @@
 import userModel from "../../models/User.js";
+import logger from "../../utils/logger.js";
+import { hashId } from "../../utils/logSanitize.js";
 
 /**
  * @desc    Disconnect a specific platform account
@@ -69,7 +71,7 @@ export const disconnectAccount = async (req, res, next) => {
 
         res.status(200).json({ message: `Disconnected ${platform} account ${accountId} successfully.` });
     } catch (error) {
-        console.error("Disconnect error:", error);
-        next(new Error("Failed to disconnect account"));
+        error.logContext = { platform, accountId: hashId(accountId) };
+        next(error);
     }
 };

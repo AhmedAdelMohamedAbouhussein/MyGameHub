@@ -1,6 +1,7 @@
 import axios from "axios";
 import config from "./env.js";
 import redisClient from "./redis.js";
+import logger from "../utils/logger.js";
 
 const TRAILER_TTL = 3600; // 1 hour
 
@@ -11,11 +12,11 @@ export async function getGameTrailer(gameName) {
     try {
         const cached = await redisClient.get(cacheKey);
         if (cached) {
-            console.log(`[Cache HIT] ${cacheKey}`);
+            logger.debug({ cacheKey }, '[YouTube] Cache HIT');
             return JSON.parse(cached);
         }
     } catch (cacheErr) {
-        console.warn("[Cache] Redis GET failed (youtube):", cacheErr.message);
+        logger.warn({ err: cacheErr }, '[YouTube] Redis GET failed');
     }
 
     // ── YouTube API call ─────────────────────────────────────────────
@@ -48,15 +49,15 @@ export async function getGameTrailer(gameName) {
         // ── Store in cache ───────────────────────────────────────────
         try {
             await redisClient.setEx(cacheKey, TRAILER_TTL, JSON.stringify(result));
-            console.log(`[Cache SET] ${cacheKey} (TTL: ${TRAILER_TTL}s)`);
+            logger.debug({ cacheKey, ttl: TRAILER_TTL }, '[YouTube] Cache SET');
         } catch (cacheErr) {
-            console.warn("[Cache] Redis SET failed (youtube):", cacheErr.message);
+            logger.warn({ err: cacheErr }, '[YouTube] Redis SET failed');
         }
 
         return result;
     }
     catch (err) {
-        console.error("YouTube fetch failed:", err.message);
+        logger.error({ err }, '[YouTube] Trailer fetch failed');
         return null;
     }
 }

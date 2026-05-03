@@ -1,5 +1,6 @@
 import userModel from "../../../models/User.js";
 import bcrypt from "bcrypt";
+import { hashId } from "../../../utils/logSanitize.js";
 
 /**
  * @desc    Set initial password for users who signed up via Google
@@ -45,7 +46,7 @@ export const setInitialPassword = async (req, res, next) => {
 
         res.status(200).json({ message: "Password set successfully! You can now log in with your email and password as well." });
     } catch (error) {
-        console.error("Set initial password error:", error);
+        error.logContext = { userId: hashId(userId) };
         next(error);
     }
 };

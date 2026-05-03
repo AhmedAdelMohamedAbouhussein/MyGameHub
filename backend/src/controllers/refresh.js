@@ -1,6 +1,8 @@
 import axios from "axios";
 import userModel from "../models/User.js";
 import config from '../config/env.js';
+import logger from '../utils/logger.js';
+import { hashId } from '../utils/logSanitize.js';
 
 import { getOwnedGames, getUserAchievements } from "./allSteamInfo.js";
 import { getXboxOwnedGames, enrichOwnedGamesWithAchievements } from "./allxboxinfo.js";
@@ -35,7 +37,7 @@ export const refreshOwnedGames = async (req, res, next) => {
                 dbUser.ownedGames.set("Steam", platformGamesMap);
                 hasChanges = true;
             } catch (error) {
-                console.error(`Steam refresh error for ${account.accountId}:`, error.message);
+                logger.error({ err: error, accountId: hashId(account.accountId) }, 'Steam refresh error');
                 errors.push({ platform: 'Steam', account: account.accountId, message: error.message });
             }
         }
@@ -111,7 +113,7 @@ export const refreshOwnedGames = async (req, res, next) => {
                         resyncUrl: '/library/sync/xbox'
                     });
                 } else {
-                    console.error(`Xbox refresh error for ${account.accountId}:`, error.message);
+                    logger.error({ err: error, accountId: hashId(account.accountId) }, 'Xbox refresh error');
                     errors.push({ platform: 'Xbox', account: account.accountId, message: error.message });
                 }
             }
@@ -160,7 +162,7 @@ export const refreshOwnedGames = async (req, res, next) => {
                         resyncUrl: '/library/sync/psn'
                     });
                 } else {
-                    console.error(`PSN refresh error for ${account.accountId}:`, error.message);
+                    logger.error({ err: error, accountId: hashId(account.accountId) }, 'PSN refresh error');
                     errors.push({ platform: 'PSN', account: account.accountId, message: error.message });
                 }
             }
@@ -177,9 +179,9 @@ export const refreshOwnedGames = async (req, res, next) => {
             errors: errors.length > 0 ? errors : undefined
         });
     }
-    catch (err) {
-        console.error("Global refresh error:", err);
-        next(new Error("Failed to refresh owned games"));
+    catch (error) {
+        error.logContext = {};
+        next(error);
     }
 };
 

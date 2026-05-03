@@ -1,4 +1,5 @@
 // ─── Shared Layout Shell ─────────────────────────────────────────────────────
+import config from '../config/env.js';
 const shell = (accentColor, content) => `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GameHub</title></head>
@@ -99,7 +100,7 @@ export const generatePriceDropEmail = (userName, gameName, gameId, drops) => {
         heading(`<em style="font-style:normal;color:#10B981;">${gameName}</em> is on sale!`,
             `Hi ${userName || 'Gamer'}, a game on your wishlist just dropped in price.`) +
         table +
-        `<a href="/games/${gameId}" style="display:inline-block;margin-top:8px;padding:12px 28px;background:#10B981;color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:10px;">View Game</a>`;
+        `<a href="${config.frontendUrl}/games/${gameId}" style="display:inline-block;margin-top:8px;padding:12px 28px;background:#10B981;color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:10px;">View Game</a>`;
 
     return shell('#10B981', body);
 };

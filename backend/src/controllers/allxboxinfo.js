@@ -5,6 +5,8 @@ import https from "https";
 
 import config from "../config/env.js";
 import { uploadImageFromUrl } from "../utils/imageUpload.js";
+import logger from "../utils/logger.js";
+import { hashId } from "../utils/logSanitize.js";
 
 const RAWG_API_KEY = config.RAWG_API_KEY;
 
@@ -45,7 +47,7 @@ export async function getXboxProfile(xuid, userHash, xstsToken) {
         };
 
     } catch (err) {
-        console.warn(`Failed profile ${xuid}: ${err.message}`);
+        logger.warn({ xuid: hashId(xuid), err }, 'Xbox profile fetch failed');
         return null;
     }
 }
@@ -82,7 +84,7 @@ export async function getXboxFriends(xuid, userHash, xstsToken, existingFriends 
                     if (!profile) return null;
 
                     const freshAvatarUrl = profile.avatar;
-                    
+
                     // Find existing friend data
                     const existingFriend = existingFriends.find(f => f.externalId === friend.externalId);
                     let avatarUrl = existingFriend?.avatar;
@@ -109,7 +111,7 @@ export async function getXboxFriends(xuid, userHash, xstsToken, existingFriends 
         return detailed.filter(f => f !== null);
 
     } catch (err) {
-        console.warn(`Friends error: ${err.message}`);
+        logger.warn({ xuid: hashId(xuid), err }, 'Xbox friends fetch failed');
         return [];
     }
 }
@@ -143,7 +145,7 @@ export async function getXboxOwnedGames(xuid, userHash, xstsToken) {
         }));
 
     } catch (err) {
-        console.warn(`Owned games error: ${err.message}`);
+        logger.warn({ xuid: hashId(xuid), err }, 'Xbox owned games fetch failed');
         return [];
     }
 }
@@ -171,7 +173,7 @@ export async function getXboxAchievements(xuid, titleId, userHash, xstsToken) {
         }));
 
     } catch (err) {
-        console.warn(`Achievements error ${titleId}: ${err.message}`);
+        logger.warn({ titleId, err }, 'Xbox achievements fetch failed');
         return [];
     }
 }
@@ -208,7 +210,7 @@ async function getRawgGameCover(gameName, platformSlug = null) {
         return match.background_image || null;
 
     } catch (err) {
-        console.warn(`RAWG image error ${gameName}: ${err.message}`);
+        logger.warn({ gameName, err }, 'RAWG image fetch failed');
         return null;
     }
 }

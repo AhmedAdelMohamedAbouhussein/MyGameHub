@@ -5,6 +5,7 @@ import http from "http";
 import https from "https";
 import config from "../config/env.js";
 import { uploadImageFromUrl } from "../utils/imageUpload.js";
+import { hashId } from "../utils/logSanitize.js";
 
 const STEAM_API_KEY = config.steam.apiKey;
 
@@ -98,7 +99,7 @@ export async function getUserAchievements(steamId, games) {
                 const progress = parsed.length ? Number(((completedCount / parsed.length) * 100).toFixed(2)) : 0;
                 return { ...game, achievements: parsed, progress };
             } catch (err) {
-                console.warn(`Failed achievements for ${game.gameName} (${game.gameId}): ${err.message}`);
+                logger.warn({ gameName: game.gameName, gameId: game.gameId, err }, 'Steam achievements fetch failed');
                 return { ...game, achievements: [], progress: 0 };
             }
         })
@@ -139,10 +140,10 @@ export async function getUserFriendList(steamId, existingFriends = []) {
         const chunkedResults = await Promise.all(summaryTasks);
         const allPlayers = chunkedResults.flat();
 
-        const formattedFriends = await Promise.all(allPlayers.map((p) => 
+        const formattedFriends = await Promise.all(allPlayers.map((p) =>
             friendsLimit(async () => {
                 const freshAvatarUrl = p.avatarfull;
-                
+
                 // Find existing friend data
                 const existingFriend = existingFriends.find(f => f.externalId === p.steamid);
                 let avatarUrl = existingFriend?.avatar;
@@ -171,7 +172,7 @@ export async function getUserFriendList(steamId, existingFriends = []) {
 
         return formattedFriends;
     } catch (err) {
-        console.warn(`Failed to fetch user Friends List: ${err.message}`);
+        logger.warn({ accountId: hashId(steamId), err }, 'Steam friend list fetch failed');
         return [];
     }
 }

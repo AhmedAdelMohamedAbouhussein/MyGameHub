@@ -2,9 +2,9 @@ import { useContext, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { 
-    FaUserPlus, FaUserCheck, FaUserTimes, FaUserMinus, 
-    FaArrowLeft, FaCopy, FaEye, FaSearch, FaGhost 
+import {
+    FaUserPlus, FaUserCheck, FaUserTimes, FaUserMinus,
+    FaArrowLeft, FaCopy, FaEye, FaSearch, FaGhost
 } from "react-icons/fa";
 import apiClient from "../../utils/apiClient.js";
 
@@ -46,7 +46,7 @@ function ManageFriendsPage() {
                 const publicIDs = userFriendRecords.map(f => f.user);
                 const response = await apiClient.post(`/users/batch`, { publicIDs });
                 const userProfiles = response.data.users || [];
-                
+
                 allFriends.User = userFriendRecords.map(friend => {
                     const profile = userProfiles.find(p => p.publicID === friend.user);
                     return profile ? { ...friend, ...profile } : friend;
@@ -136,7 +136,7 @@ function ManageFriendsPage() {
         toast.success("PublicID copied to clipboard!");
     };
 
-    const filteredFriends = allFriendsList.filter(f => 
+    const filteredFriends = allFriendsList.filter(f =>
         (f.displayName || f.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (f.publicID || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -152,8 +152,8 @@ function ManageFriendsPage() {
     );
 
     const renderFriendItem = (friend, buttons) => (
-        <div 
-            key={friend.user} 
+        <div
+            key={friend.user}
             className="group flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-midnight-700/60 backdrop-blur-sm border border-midnight-500/20 hover:border-accent/30 hover:bg-midnight-700/80 transition-all duration-300"
         >
             <div className="relative">
@@ -180,7 +180,7 @@ function ManageFriendsPage() {
                 </div>
                 <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-text-muted">
                     <span className="truncate">@{friend.publicID}</span>
-                    <button 
+                    <button
                         onClick={() => {
                             navigator.clipboard.writeText(friend.publicID);
                             toast.success("Friend's PublicID copied!");
@@ -189,7 +189,7 @@ function ManageFriendsPage() {
                     >
                         <FaCopy size={10} />
                     </button>
-                    <Link to={`/friends/viewprofile/${encodeURIComponent(friend.publicID)}`} className="hover:text-accent transition-colors">
+                    <Link to={`/profile/${encodeURIComponent(friend.profileHandle || friend.publicID)}`} className="hover:text-accent transition-colors">
                         <FaEye size={12} />
                     </Link>
                 </div>
@@ -250,7 +250,7 @@ function ManageFriendsPage() {
                                     <p className="text-[10px] text-text-muted uppercase font-black">Your Public ID</p>
                                     <p className="text-base font-mono font-bold text-text-primary">{user.publicID}</p>
                                 </div>
-                                <button 
+                                <button
                                     onClick={copyPublicID}
                                     className="p-3 rounded-xl bg-midnight-600 hover:bg-accent hover:text-white text-text-secondary transition-all"
                                 >
@@ -268,9 +268,9 @@ function ManageFriendsPage() {
                         {sentRequests.length > 0 && (
                             <div className="relative mb-4">
                                 <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-xs" />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search sent requests..." 
+                                <input
+                                    type="text"
+                                    placeholder="Search sent requests..."
                                     className="w-full bg-midnight-900/50 border border-midnight-500/20 rounded-xl py-2 pl-10 pr-4 text-xs focus:ring-1 focus:ring-accent outline-none"
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
@@ -280,8 +280,8 @@ function ManageFriendsPage() {
                             sentRequests.map(friend =>
                                 renderFriendItem(
                                     friend,
-                                    <button 
-                                        className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white transition-all text-xs font-bold" 
+                                    <button
+                                        className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-danger/10 text-danger hover:bg-danger hover:text-white transition-all text-xs font-bold"
                                         onClick={() => rejectMutation.mutate(friend.user)}
                                     >
                                         Cancel
@@ -299,9 +299,9 @@ function ManageFriendsPage() {
                         {pendingRequests.length > 0 && (
                             <div className="relative mb-4">
                                 <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-xs" />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search incoming requests..." 
+                                <input
+                                    type="text"
+                                    placeholder="Search incoming requests..."
                                     className="w-full bg-midnight-900/50 border border-midnight-500/20 rounded-xl py-2 pl-10 pr-4 text-xs focus:ring-1 focus:ring-accent outline-none"
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
@@ -312,14 +312,14 @@ function ManageFriendsPage() {
                                 renderFriendItem(
                                     friend,
                                     <>
-                                        <button 
-                                            className="flex-1 px-4 py-2 rounded-xl bg-accent text-white hover:bg-accent-hover transition-all text-xs font-bold shadow-lg shadow-accent/20" 
+                                        <button
+                                            className="flex-1 px-4 py-2 rounded-xl bg-accent text-white hover:bg-accent-hover transition-all text-xs font-bold shadow-lg shadow-accent/20"
                                             onClick={() => acceptMutation.mutate(friend.user)}
                                         >
                                             Accept
                                         </button>
-                                        <button 
-                                            className="flex-1 px-4 py-2 rounded-xl bg-midnight-600 text-text-secondary hover:bg-danger hover:text-white transition-all text-xs font-bold" 
+                                        <button
+                                            className="flex-1 px-4 py-2 rounded-xl bg-midnight-600 text-text-secondary hover:bg-danger hover:text-white transition-all text-xs font-bold"
                                             onClick={() => rejectMutation.mutate(friend.user)}
                                         >
                                             Reject
@@ -337,9 +337,9 @@ function ManageFriendsPage() {
                     <div className="space-y-3 py-2 animate-in fade-in duration-300">
                         <div className="relative mb-4">
                             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-xs" />
-                            <input 
-                                type="text" 
-                                placeholder="Search friends list..." 
+                            <input
+                                type="text"
+                                placeholder="Search friends list..."
                                 className="w-full bg-midnight-900/50 border border-midnight-500/20 rounded-xl py-2 pl-10 pr-4 text-xs focus:ring-1 focus:ring-accent outline-none"
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -348,8 +348,8 @@ function ManageFriendsPage() {
                             acceptedFriends.map(friend =>
                                 renderFriendItem(
                                     friend,
-                                    <button 
-                                        className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-midnight-600 text-text-secondary hover:bg-danger hover:text-white transition-all text-xs font-bold" 
+                                    <button
+                                        className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-midnight-600 text-text-secondary hover:bg-danger hover:text-white transition-all text-xs font-bold"
                                         onClick={() => {
                                             if (window.confirm(`Are you sure you want to remove ${friend.displayName}?`)) {
                                                 removeMutation.mutate(friend.user);
@@ -371,7 +371,7 @@ function ManageFriendsPage() {
             <Header />
             <main className="flex-1 selection:bg-accent selection:text-white">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16 space-y-10">
-                    
+
                     {/* Page Header */}
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                         <div className="space-y-1">
@@ -416,7 +416,7 @@ function ManageFriendsPage() {
                                         <span className="text-lg">{tab.icon}</span>
                                         <span className="hidden sm:inline-block">{tab.label}</span>
                                         {tab.count > 0 && (
-                                            <span 
+                                            <span
                                                 className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-midnight-700 shadow-lg animate-in fade-in zoom-in duration-300"
                                             >
                                                 {tab.count > 9 ? '9+' : tab.count}

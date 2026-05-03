@@ -45,7 +45,7 @@ function FriendsPage() {
                         return { ...friend, ...profile };
                     }).filter(Boolean);
                 } catch (e) {
-                    console.error("Batch fetch failed:", e);
+                    // batch profile fetch failed — platform friends skipped
                 }
             }
             return allFriends;
@@ -211,7 +211,7 @@ function FriendsPage() {
                                                             {name}
                                                         </h3>
                                                         <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-0.5">
-                                                            {currentPlatform === "User" ? `@${friend.publicID}` : `${currentPlatform} Network`}
+                                                            {currentPlatform === "User" ? `@${friend.publicID || friend.profileHandle}` : `${currentPlatform} Network`}
                                                         </p>
                                                     </div>
                                                     {sourceAccount && (
@@ -228,7 +228,7 @@ function FriendsPage() {
                                                 <div className="flex items-center gap-3 mt-3">
                                                     {currentPlatform === "User" ? (
                                                         <Link
-                                                            to={`/friends/viewprofile/${encodeURIComponent(friend.publicID)}`}
+                                                            to={`/profile/${encodeURIComponent(friend.profileHandle || friend.publicID)}`}
                                                             className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-[9px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all"
                                                         >
                                                             Profile
@@ -264,10 +264,10 @@ function FriendsPage() {
                             ) : (
                                 <div className="col-span-full py-24 flex flex-col items-center justify-center text-center space-y-6 animate-in fade-in zoom-in duration-500">
                                     <div className="relative">
-                                       <div className="absolute inset-0 bg-accent/20 blur-3xl rounded-full" />
-                                       <div className="relative w-28 h-28 rounded-3xl bg-midnight-800/80 backdrop-blur-xl border border-white/10 flex items-center justify-center text-5xl shadow-2xl">
-                                           🤝
-                                       </div>
+                                        <div className="absolute inset-0 bg-accent/20 blur-3xl rounded-full" />
+                                        <div className="relative w-28 h-28 rounded-3xl bg-midnight-800/80 backdrop-blur-xl border border-white/10 flex items-center justify-center text-5xl shadow-2xl">
+                                            🤝
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <h3 className="text-2xl font-black text-text-primary uppercase tracking-tight">No Friends Found</h3>

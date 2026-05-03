@@ -1,5 +1,7 @@
 import userModel from '../../models/User.js'
 import Notification from '../../models/Notification.js';
+import logger from '../../utils/logger.js';
+import { hashId } from '../../utils/logSanitize.js';
 
 export const addFriends = async (req, res, next) => {
   const friendPublicID = decodeURIComponent(req.params.friendId); // param now refers to friend's publicID
@@ -19,7 +21,7 @@ export const addFriends = async (req, res, next) => {
 
     const publicID = user.publicID;
 
-    console.log("Add friend request from", publicID, "to", friendPublicID);
+    logger.debug({ from: hashId(publicID), to: hashId(friendPublicID) }, 'Friend request sent');
 
     // Prevent adding yourself
     if (publicID === friendPublicID) {

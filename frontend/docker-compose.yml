@@ -7,4 +7,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "80:80"
+    environment:
+      # Injected into the nginx CSP connect-src at container startup via envsubst.
+      # Set this to your backend API URL, e.g. https://api.yourdomain.com
+      - BACKEND_URL=${VITE_REACT_APP_BACKEND_URL}
     restart: unless-stopped

@@ -1,5 +1,7 @@
 import userModel from "../../../models/User.js";
 import config from '../../../config/env.js';
+import logger from '../../../utils/logger.js';
+import { hashId } from '../../../utils/logSanitize.js';
 
 const APP_BACKEND_URL = config.appUrl;
 const APP_FRONTEND_URL = config.frontendUrl;
@@ -11,7 +13,7 @@ export const getUserById = async (req, res, next) => {
   try {
     const publicID = decodeURIComponent(req.params.publicID);
 
-    console.log("Fetching user with publicID:", publicID);
+    logger.debug({ publicID: hashId(publicID) }, 'Fetching user by publicID');
     if (!publicID) {
       const err = new Error("User publicID is required");
       err.status = 400;
@@ -29,10 +31,7 @@ export const getUserById = async (req, res, next) => {
     res.status(200).json({ user });
   }
   catch (error) {
-    console.error(error);
-    const err = new Error("Wasn't able to get user");
-    err.status = 500;
-    return next(err);
+    return next(error);
   }
 };
 
@@ -60,7 +59,6 @@ export const getUserIdByEmail = async (req, res, next) => {
     res.status(200).json({ userId: user._id });
   }
   catch (error) {
-    console.error(error);
     const err = new Error("Wasn't able to get user");
     next(err);
   }
@@ -127,8 +125,7 @@ export const loginUser = async (req, res, next) => {
 
       return req.session.save(err => {
         if (err) {
-          console.error("Session save error:", err);
-          const err = new Error("Failed to save session");
+          err.logContext = { userId: hashId(userId) };
           return next(err);
         }
         return res.status(200).json({ message: "Login successful redirecting to Landing Page......" });
@@ -139,7 +136,6 @@ export const loginUser = async (req, res, next) => {
     }
   }
   catch (error) {
-    console.error(error);
     return next(error);
   }
 };
@@ -315,9 +311,6 @@ export const getBatchUsers = async (req, res, next) => {
 
     res.status(200).json({ users });
   } catch (error) {
-    console.error("Batch fetch error:", error);
-    const err = new Error("Wasn't able to fetch batch users");
-    err.status = 500;
-    next(err);
+    next(error);
   }
 };

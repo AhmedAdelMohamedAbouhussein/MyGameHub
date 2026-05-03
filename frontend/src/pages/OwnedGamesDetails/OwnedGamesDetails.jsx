@@ -41,7 +41,6 @@ function getAchievementIcon(ach) {
 
 const fetchOwnedGameDetails = async (platform, id) => {
   const res = await apiClient.post(`/users/ownedgames/${platform}/${id}`, {});
-  console.log(res);
   return res.data.game;
 };
 

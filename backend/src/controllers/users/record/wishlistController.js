@@ -2,6 +2,8 @@ import User from '../../../models/User.js';
 import axios from 'axios';
 import config from '../../../config/env.js';
 import redisClient from '../../../config/redis.js';
+import logger from '../../../utils/logger.js';
+import { hashId } from '../../../utils/logSanitize.js';
 
 const RAWG_API_KEY = config.RAWG_API_KEY;
 const ITAD_API_KEY = config.iTAD.apiKey;
@@ -26,7 +28,7 @@ async function fetchBatchPrices(itadIds, country = "US") {
         }
         return priceMap;
     } catch (err) {
-        console.error(`[Wishlist] Batch ITAD fetch failed:`, err.message);
+        logger.error({ err }, '[Wishlist] Batch ITAD fetch failed');
         return {};
     }
 }
@@ -63,7 +65,7 @@ async function fetchCurrentPrice(gameName, targetStores = [], itadId = null) {
             };
         }
     } catch (err) {
-        console.error(`[Wishlist] ITAD fetch failed for ${gameName}:`, err.message);
+        logger.error({ err, gameName }, '[Wishlist] ITAD fetch failed');
     }
     return null;
 }
@@ -72,7 +74,7 @@ export const toggleWishlist = async (req, res, next) => {
     const { gameId, gameName, targetStores, itadId, action } = req.body;
     const userId = req.session.userId;
 
-    console.log("[Wishlist] Action:", action, "Game:", gameId, gameName);
+    logger.debug({ action, gameId, gameName }, '[Wishlist] Toggle request');
 
     if (!gameId) return res.status(400).json({ message: "Game ID is required" });
 
@@ -137,6 +139,7 @@ export const toggleWishlist = async (req, res, next) => {
             });
         }
     } catch (error) {
+        error.logContext = { userId: hashId(userId) };
         next(error);
     }
 };
@@ -229,6 +232,7 @@ export const getWishlist = async (req, res, next) => {
 
         res.status(200).json({ wishlist: wishlistWithDetails.filter(i => i !== null) });
     } catch (error) {
+        error.logContext = { userId: hashId(userId) };
         next(error);
     }
 };

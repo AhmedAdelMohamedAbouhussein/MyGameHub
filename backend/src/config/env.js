@@ -12,6 +12,7 @@ export default
         xboxRedirectURL: process.env.APP_BACKEND_URL + process.env.XBOX_REDIRECT_URI,
         RAWG_API_KEY: process.env.RAWG_API_KEY,
         personalEmail: process.env.PERSONAL_EMAIL,
+        logSalt: process.env.LOG_SALT,
 
         mongoAtlas:
         {

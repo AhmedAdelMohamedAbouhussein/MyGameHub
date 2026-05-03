@@ -3,6 +3,8 @@ import pLimit from "p-limit";
 import http from "http";
 import https from "https";
 import { uploadImageFromUrl } from "../utils/imageUpload.js";
+import logger from "../utils/logger.js";
+import { hashId } from "../utils/logSanitize.js";
 
 // Concurrency limits
 const FRIENDS_CONCURRENCY = 5;
@@ -72,7 +74,7 @@ export async function getUserFriendList(accessToken, accountId, existingFriends 
         return result;
 
     } catch (error) {
-        console.error("Epic friends fetch failed:", error.response?.data || error.message);
+        logger.error({ accountId: hashId(accountId), err: error }, 'Epic friends fetch failed');
         return [];
     }
 }

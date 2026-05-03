@@ -2,12 +2,13 @@ import userModel from "../../../models/User.js";
 
 /**
  * @desc    Get a user's public profile and stats
- * @route   GET /api/users/profile/:publicID
+ * @route   GET /api/users/profile/:handle
  * @access  Public (Partial data if private)
  */
 export const getPublicProfile = async (req, res, next) => {
     try {
-        const publicID = decodeURIComponent(req.params.publicID).trim();
+        // Accept profileHandle (preferred) OR legacy publicID
+        const param = decodeURIComponent(req.params.handle).trim();
         let currentUserPublicID = null;
 
         if (req.session?.userId) {
@@ -15,7 +16,11 @@ export const getPublicProfile = async (req, res, next) => {
             currentUserPublicID = currentUser?.publicID;
         }
 
-        const targetUser = await userModel.findOne({ publicID });
+        // Try profileHandle first, then fall back to publicID (legacy URLs)
+        let targetUser = await userModel.findOne({ profileHandle: param });
+        if (!targetUser) {
+            targetUser = await userModel.findOne({ publicID: param });
+        }
 
         if (!targetUser || targetUser.isDeleted) {
             return res.status(404).json({ message: "User not found" });
@@ -63,7 +68,7 @@ export const getPublicProfile = async (req, res, next) => {
         }
 
         // Privacy Check: Only show stats if public or if they are friends
-        const isSelf = currentUserPublicID === publicID;
+        const isSelf = currentUserPublicID === targetUser.publicID;
         const isFriend = profile.friendshipStatus === "accepted";
         const canSeeStats = targetUser.profileVisibility === "public" || isFriend || isSelf;
 
@@ -142,7 +147,7 @@ export const getPublicProfile = async (req, res, next) => {
  */
 export const toggleLike = async (req, res, next) => {
     try {
-        const publicID = decodeURIComponent(req.params.publicID).trim();
+        const param = decodeURIComponent(req.params.publicID).trim();
 
         let currentUserPublicID = null;
         if (req.session?.userId) {
@@ -154,11 +159,15 @@ export const toggleLike = async (req, res, next) => {
             return res.status(401).json({ message: "Unable to identify user session." });
         }
 
-        if (publicID === currentUserPublicID) {
+        // Accept profileHandle OR legacy publicID
+        let targetUser = await userModel.findOne({ profileHandle: param });
+        if (!targetUser) {
+            targetUser = await userModel.findOne({ publicID: param });
+        }
+        if (param === currentUserPublicID) {
             return res.status(400).json({ message: "You cannot like your own profile" });
         }
 
-        const targetUser = await userModel.findOne({ publicID });
         if (!targetUser) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -216,8 +225,9 @@ export const getCommunityUsers = async (req, res, next) => {
                     totalGames += Object.keys(u.ownedGames[platform]).length;
                 }
             }
-            return {
-                publicID: u.publicID,
+
+            const entry = {
+                profileHandle: u.profileHandle,
                 name: u.name,
                 profilePicture: u.profilePicture,
                 likesCount: u.likes?.length || 0,
@@ -225,6 +235,13 @@ export const getCommunityUsers = async (req, res, next) => {
                 totalGames,
                 allowPublicFriendRequests: u.allowPublicFriendRequests !== false
             };
+
+            // Only expose publicID when the user allows public friend requests
+            if (u.allowPublicFriendRequests !== false) {
+                entry.publicID = u.publicID;
+            }
+
+            return entry;
         });
 
         res.status(200).json({ users: formatted });

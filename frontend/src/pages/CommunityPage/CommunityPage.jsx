@@ -35,7 +35,7 @@ function CommunityPage() {
         }
     });
 
-    const users = (data || []).filter(u => u.publicID !== user?.publicID);
+    const users = (data || []).filter(u => u.profileHandle !== user?.profileHandle);
 
     return (
         <div className="page-container flex flex-col lg:flex-row h-screen overflow-hidden">
@@ -93,7 +93,7 @@ function CommunityPage() {
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {users.map(u => (
-                                    <div key={u.publicID} onClick={() => navigate(`/profile/${encodeURIComponent(u.publicID)}`)} className="group bg-midnight-800/50 backdrop-blur-md rounded-3xl border border-white/5 p-6 hover:bg-midnight-700 hover:border-white/10 transition-all cursor-pointer hover:-translate-y-1 shadow-lg hover:shadow-accent/5">
+                                    <div key={u.profileHandle} onClick={() => navigate(`/profile/${encodeURIComponent(u.profileHandle)}`)} className="group bg-midnight-800/50 backdrop-blur-md rounded-3xl border border-white/5 p-6 hover:bg-midnight-700 hover:border-white/10 transition-all cursor-pointer hover:-translate-y-1 shadow-lg hover:shadow-accent/5">
                                         <div className="flex flex-col items-center text-center">
                                             <div className="w-24 h-24 rounded-full overflow-hidden bg-midnight-900 border-4 border-midnight-700 group-hover:border-accent/50 transition-colors mb-4 shadow-xl">
                                                 {u.profilePicture ? (
@@ -105,10 +105,10 @@ function CommunityPage() {
                                                 )}
                                             </div>
                                             <h3 className="text-lg font-black text-white truncate w-full">{u.name}</h3>
-                                            {u.allowPublicFriendRequests ? (
+                                            {u.publicID ? (
                                                 <p className="text-[10px] font-bold text-accent uppercase tracking-widest mb-4">@{u.publicID}</p>
                                             ) : (
-                                                <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-4">ID HIDDEN</p>
+                                                <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-4">Friend requests disabled</p>
                                             )}
 
                                             {u.bio && (

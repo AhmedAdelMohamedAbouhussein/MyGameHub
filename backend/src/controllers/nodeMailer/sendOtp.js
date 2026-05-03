@@ -117,7 +117,7 @@ export const sendOtp = async (req, res, next) => {
         if (purpose === "email_verification") {
             if (user.isVerified) {
                 const error = new Error("User already verified")
-                error.status = 500;
+                error.status = 400;
                 return next(error);
             }
 
@@ -131,7 +131,7 @@ export const sendOtp = async (req, res, next) => {
         if (purpose === "restore_account") {
             if (user.isDeleted === false) {
                 const error = new Error("User isnt deleted")
-                error.status = 500;
+                error.status = 400;
                 return next(error);
             }
             await checkResendLimit(user, userId, "restoreAccount");

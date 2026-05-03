@@ -29,5 +29,8 @@ jobs:
 
       - name: Build and Push Frontend Image
         run: |
-          docker build -t ahmedadelabouhussein/web_app_frontend:latest ./frontend
+          docker build \
+            --build-arg VITE_REACT_APP_BACKEND_URL=${{ secrets.VITE_REACT_APP_BACKEND_URL }} \
+            -t ahmedadelabouhussein/web_app_frontend:latest \
+            ./frontend
           docker push ahmedadelabouhussein/web_app_frontend:latest

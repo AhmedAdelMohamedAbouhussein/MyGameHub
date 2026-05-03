@@ -77,8 +77,7 @@ export const verifyOtp = async (req, res, next) => {
 
             return req.session.save(err => {
                 if (err) {
-                    console.error("Session save error:", err);
-                    const err = new Error("Failed to save session");
+                    err.logContext = {};
                     return next(err);
                 }
                 return res.status(200).json({ message: "Email verified successfully, redirecting to Landing Page......" });

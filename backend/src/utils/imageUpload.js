@@ -2,6 +2,7 @@ import { v2 as cloudinary } from "cloudinary";
 import config from "../config/env.js";
 import sharp from "sharp";
 import axios from "axios";
+import logger from "./logger.js";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -70,7 +71,7 @@ export const processAndUploadImage = async (fileBuffer, folder) => {
         });
 
     } catch (error) {
-        console.error("Error processing and uploading image:", error);
+        logger.error({ err: error }, 'processAndUploadImage error');
         throw error;
     }
 };
@@ -139,7 +140,7 @@ export const uploadImageFromUrl = async (url, folder, publicId = null) => {
         });
 
     } catch (err) {
-        console.error(`Cloudinary URL upload error (${folder}):`, err.message);
+        logger.error({ err, folder }, 'uploadImageFromUrl error');
         return null;
     }
 };
@@ -159,6 +160,6 @@ export const deleteImageByUrl = async (url) => {
 
         await cloudinary.uploader.destroy(publicId);
     } catch (err) {
-        console.error("Cloudinary delete error:", err);
+        logger.error({ err }, 'deleteImageByUrl error');
     }
 };

@@ -52,7 +52,6 @@ const WishlistButton = ({ gameId, gameName, itadId, variant = "large", initialSt
 
     const toggleMutation = useMutation({
         mutationFn: ({ action = "update", targetStores = selectedStores } = {}) => {
-            console.log("[WishlistButton] Toggling wishlist:", { gameId, gameName, targetStores, itadId, action });
             return apiClient.post("/users/wishlist/toggle", {
                 gameId,
                 gameName,
@@ -62,14 +61,12 @@ const WishlistButton = ({ gameId, gameName, itadId, variant = "large", initialSt
             });
         },
         onSuccess: (res) => {
-            console.log("[WishlistButton] Toggle success:", res.data);
             queryClient.invalidateQueries({ queryKey: ["wishlistStatus", gameId] });
             queryClient.invalidateQueries({ queryKey: ["wishlist"] });
             toast.success(res.data.message);
             setIsMenuOpen(false);
         },
         onError: (err) => {
-            console.error("[WishlistButton] Toggle error:", err);
             toast.error("Failed to update wishlist");
         }
     });

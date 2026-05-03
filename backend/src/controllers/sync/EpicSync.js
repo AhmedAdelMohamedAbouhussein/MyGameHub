@@ -3,6 +3,8 @@ import config from "../../config/env.js";
 import userModel from "../../models/User.js";
 import { getUserFriendList } from "../allEpicInfo.js";
 import { uploadImageFromUrl } from "../../utils/imageUpload.js";
+import logger from "../../utils/logger.js";
+import { hashId } from "../../utils/logSanitize.js";
 
 const CLIENT_ID = config.epic.clientId;
 const CLIENT_SECRET = config.epic.clientSecret;
@@ -88,17 +90,12 @@ export async function epicReturn(req, res) {
     dbUser.friends.set("Epic", [...currentFriends, ...mappedFriends]);
     dbUser.markModified("friends");
 
-    // Update main profile picture if missing
-    if (!dbUser.profilePicture && epicAvatar) {
-      dbUser.profilePicture = epicAvatar;
-    }
-
     await dbUser.save();
-    console.log(`Epic Sync complete for user ${displayName} (${epicId})`);
+    logger.info({ userId: hashId(userId), provider: 'Epic' }, 'Epic sync complete');
     res.redirect(`${FRONTEND_URL}/library?sync=epic_success`);
 
   } catch (error) {
-    console.error("Epic Sync Error:", error.response?.data || error.message);
+    logger.error({ userId: hashId(userId), err: error }, 'Epic sync error');
     res.redirect(`${FRONTEND_URL}/library?error=epic_sync_failed`);
   }
 }

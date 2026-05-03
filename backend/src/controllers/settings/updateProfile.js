@@ -65,7 +65,6 @@ export const updateProfile = async (req, res, next) => {
             user: updatedUser
         });
     } catch (error) {
-        console.error("Update profile error:", error);
         next(error);
     }
 };

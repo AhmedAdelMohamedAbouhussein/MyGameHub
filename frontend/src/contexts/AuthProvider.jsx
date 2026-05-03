@@ -1,33 +1,28 @@
-import {useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import apiClient from "../utils/apiClient.js";
 
 import LoadingScreen from "../components/LoadingScreen/LoadingScreen";
 import AuthContext from "./AuthContext";
 
-function AuthProvider({ children }) 
-{
-    
+function AuthProvider({ children }) {
+
 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchUser = async () => 
-    {
+    const fetchUser = async () => {
         setLoading(true);
-        try 
-        {
+        try {
             const res = await apiClient.get(`/auth/authUser`, { withCredentials: true });
             setUser(res.data.user);
             console.log("Fetched user:", res.data.user);
-        } 
-        catch (error) 
-        {
+        }
+        catch (error) {
             const message = error.response?.data?.message || error.message || "Unknown error";
             console.log(message);
             setUser(null);
-        } 
-        finally 
-        {
+        }
+        finally {
             setLoading(false);
         }
     };
@@ -35,20 +30,17 @@ function AuthProvider({ children })
     // Run once on mount
     useEffect(() => {
         const loadUser = async () => {
-            try 
-            {
+            try {
                 await fetchUser();
-            } 
-            catch (err) 
-            {
+            }
+            catch (err) {
                 console.error(err);
             }
         };
         loadUser();
     }, []);
 
-    if (loading) 
-    {
+    if (loading) {
         return <LoadingScreen />;
     }
 

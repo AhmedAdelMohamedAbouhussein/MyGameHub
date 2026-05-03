@@ -1,4 +1,6 @@
 import userModel from '../../models/User.js'
+import logger from '../../utils/logger.js';
+import { hashId } from '../../utils/logSanitize.js';
 
 // @desc  
 // @route  get /auth/authUser
@@ -8,7 +10,7 @@ export const authUser = async (req, res, next) =>
     {
         if (!req.session?.userId) 
         {
-            console.log("Not authenticated")
+            logger.warn({ ip: req.ip }, 'authUser called with no session');
 
             const error = new Error("Not authenticated");
             error.status = 401;
@@ -20,20 +22,19 @@ export const authUser = async (req, res, next) =>
 
         if (!user) 
         {
-            console.log("User not found")
+            logger.warn({ userId: hashId(req.session.userId) }, 'authUser: user not found in DB');
 
             const error = new Error("User not found");
             error.status = 404;
             return next(error);
         }
 
-        console.log("authenticated")
+        logger.debug({ userId: hashId(req.session.userId) }, 'authUser: authenticated');
         return res.json({ user: user }); // toJSON transform handles cleanup and hasPassword
     } 
-    catch (err) 
+    catch (error) 
     {
-        console.error(err);
-        const error = new Error("Server error");
+        error.logContext = {};
         next(error);
     }
 }

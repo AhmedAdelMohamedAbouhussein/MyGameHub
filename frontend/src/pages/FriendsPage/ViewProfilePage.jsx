@@ -14,7 +14,6 @@ import BackButton from "../../components/BackButton/BackButton";
 
 function ViewProfilePage() {
     const { publicID } = useParams();
-    console.log(publicID);
     const { user: currentUser } = useContext(AuthContext);
     const navigate = useNavigate();
     const queryClient = useQueryClient();

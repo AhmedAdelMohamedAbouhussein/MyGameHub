@@ -16,7 +16,6 @@ const WishlistPage = () => {
         queryKey: ["wishlist"],
         queryFn: async () => {
             const res = await apiClient.get("/users/wishlist/view");
-            console.log("[WishlistPage] Received data:", res.data.wishlist);
             return res.data.wishlist;
         }
     });

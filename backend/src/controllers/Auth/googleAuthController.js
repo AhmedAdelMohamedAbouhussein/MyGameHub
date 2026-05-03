@@ -1,7 +1,9 @@
 import { google } from 'googleapis';
-import { UserRefreshClient, OAuth2Client } from 'google-auth-library';
+import { OAuth2Client } from 'google-auth-library';
 import config from '../../config/env.js'
 import userModel from '../../models/User.js'
+import logger from '../../utils/logger.js';
+import { maskEmail } from '../../utils/logSanitize.js';
 
 const CI = config.google.clientId;
 const CS = config.google.clientSecret;
@@ -26,7 +28,7 @@ export const googleLogin = async (req, res, next) => {
         const userInfoResponse = await oauth2.userinfo.get();
         const useremail = userInfoResponse.data.email;
 
-        console.log('User Info:', useremail);
+        logger.debug({ email: maskEmail(useremail) }, 'Google login: user info fetched');
 
 
         // Check active user
@@ -39,9 +41,9 @@ export const googleLogin = async (req, res, next) => {
 
             return req.session.save(err => {
                 if (err) {
-                    console.error("Session save error:", err);
-                    const err = new Error("Failed to save session");
-                    return next(err);
+                    const sessionErr = new Error("Failed to save session");
+                    sessionErr.logContext = {};
+                    return next(sessionErr);
                 }
                 return res.status(200).json({
                     message: "Login successful redirecting to Landing Page......"
@@ -55,8 +57,8 @@ export const googleLogin = async (req, res, next) => {
             return res.status(409).json({
                 message:
                     "This email is associated with a deleted account. Would you like to restore your old account or permanently delete it?",
-                restoreLink: `${APP_BACKEND_URL}/api/users/${useremail}/restore`,
-                permanentDelete: `${APP_BACKEND_URL}/api/users/${useremail}/delete`,
+                restoreLink: `${config.appUrl}/api/users/${useremail}/restore`,
+                permanentDelete: `${config.appUrl}/api/users/${useremail}/delete`,
             });
         }
 
@@ -67,7 +69,6 @@ export const googleLogin = async (req, res, next) => {
 
     }
     catch (error) {
-        console.error("Google login error:", error.response?.data || error.message || error);
         const err = new Error("Error during Google login")
         return next(err)
     }
@@ -89,6 +90,8 @@ export const googleSignup = async (req, res, next) => {
         const useremail = userInfoResponse.data.email;
         const username = userInfoResponse.data.name;
 
+        logger.debug({ email: maskEmail(useremail) }, 'Google Signup: user info fetched');
+
         // Check if an active user already exists
         const activeUser = await userModel.findOne({ email: useremail, isDeleted: false });
         if (activeUser) {
@@ -101,7 +104,7 @@ export const googleSignup = async (req, res, next) => {
         const deletedUser = await userModel.findOne({ email: useremail, isDeleted: true });
         if (deletedUser) {
             // Send a friendly message suggesting restore
-            return res.status(409).json({ message: "This email is associated with a deleted account. Would you like to restore your old account or permanently delete it?", restoreLink: `${APP_BACKEND_URL}/api/users/${useremail}/restore`, permanentDelete: `${APP_BACKEND_URL}/api/users/${useremail}/permanentDelete` });
+            return res.status(409).json({ message: "This email is associated with a deleted account. Would you like to restore your old account or permanently delete it?", restoreLink: `${config.appUrl}/api/users/${useremail}/restore`, permanentDelete: `${config.appUrl}/api/users/${useremail}/permanentDelete` });
         }
 
         // Otherwise, create new user
@@ -113,8 +116,8 @@ export const googleSignup = async (req, res, next) => {
 
         return req.session.save(err => {
             if (err) {
-                console.error("Session save error:", err);
                 const error = new Error("Failed to save session");
+                error.logContext = {};
                 return next(error);
             }
             res.status(201).json({
@@ -124,7 +127,6 @@ export const googleSignup = async (req, res, next) => {
 
     }
     catch (error) {
-        console.error("Google login error:", error.response?.data || error.message || error);
         const err = new Error("Error during Google login")
         return next(err)
     }

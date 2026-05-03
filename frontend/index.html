@@ -4,49 +4,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Content Security Policy (CSP) -->
-  <!-- In Production, web server (Nginx/Apache) should send this as an HTTP Header for maximum security. -->
-  <meta http-equiv="Content-Security-Policy" content="
-  default-src 'none';
-
-  script-src 'self' https://accounts.google.com https://apis.google.com https://www.google.com;
-
-  connect-src 'self' http://localhost:8080
-    https://api.rawg.io
-    https://api.isthereanydeal.com
-    https://accounts.google.com
-    https://www.googleapis.com;
-
-  img-src 'self' data: blob:
-    https://res.cloudinary.com
-
-    https://*.akamaihd.net
-    https://*.rawg.io
-
-    https://image.api.playstation.com
-    
-    https://i.ytimg.com
-
-    https://lh3.googleusercontent.com
-    https://www.gstatic.com;
-
-  media-src 'self'
-    https://*.akamaihd.net
-    https://i.ytimg.com;
-
-  frame-src
-  https://open.spotify.com
-    https://www.youtube.com
-    https://accounts.google.com;
-
-  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-  font-src 'self' https://fonts.gstatic.com;
-
-  base-uri 'self';
-  form-action 'self';
-  frame-ancestors 'none';
-" />
-
   <meta name="description"
     content="My GameHub — Manage your game library across Steam, Xbox, PlayStation, Epic Games, and more." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />

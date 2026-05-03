@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import config from './config/env.js';
 import app from './app.js';
+import logger from './utils/logger.js';
 import { startWishlistCron, startPurgeCron, startAdminReportCron, startTokenRefreshCron } from './utils/crons.js';
 
 import userModel from './models/User.js'
@@ -15,7 +16,7 @@ const NODE_ENV = config.nodeEnv;
 
 mongoose.connect(MONGO_URL)
     .then(async () => {
-        console.log('Connected to MongoDB');
+        logger.info('Connected to MongoDB');
 
         if (NODE_ENV !== 'production') {
             mongoose.set('autoIndex', true);
@@ -28,7 +29,7 @@ mongoose.connect(MONGO_URL)
         }
 
         app.listen(PORT, "0.0.0.0", () => {
-            console.log(` Server is running on ${APP_BACKEND_URL}`);
+            logger.info({ url: APP_BACKEND_URL, env: NODE_ENV }, 'Server started');
             startWishlistCron();
             startPurgeCron();
             startAdminReportCron();
@@ -36,6 +37,6 @@ mongoose.connect(MONGO_URL)
         });
     })
     .catch((error) => {
-        console.error(' MongoDB connection error:', error);
+        logger.error({ err: error }, 'MongoDB connection error');
         process.exit(1);
     });

@@ -40,7 +40,6 @@ export async function profileBackground(req, res, next) {
             profileBackground: updatedUser.profileBackground,
         });
     } catch (err) {
-        console.error("Profile background upload error:", err);
         next(err);
     }
 }

@@ -3,6 +3,7 @@ import gameImages from '../assets/landingPageURLs.js';
 import config from "../config/env.js";
 import { getGameTrailer } from "../config/youtube.js";
 import redisClient from "../config/redis.js";
+import logger from "../utils/logger.js";
 
 const RAWG_API_KEY = config.RAWG_API_KEY;
 
@@ -29,11 +30,11 @@ async function cacheGet(key) {
     try {
         const val = await redisClient.get(key);
         if (val) {
-            console.log(`[Cache HIT] ${key}`);
+            logger.debug({ key }, 'Cache HIT');
             return JSON.parse(val);
         }
     } catch (err) {
-        console.warn(`[Cache] Redis GET error for ${key}:`, err.message);
+        logger.warn({ key, err }, 'Redis GET error');
     }
     return null;
 }
@@ -42,9 +43,9 @@ async function cacheGet(key) {
 async function cacheSet(key, data, ttl) {
     try {
         await redisClient.setEx(key, ttl, JSON.stringify(data));
-        console.log(`[Cache SET] ${key} (TTL: ${ttl}s)`);
+        logger.debug({ key, ttl }, 'Cache SET');
     } catch (err) {
-        console.warn(`[Cache] Redis SET error for ${key}:`, err.message);
+        logger.warn({ key, err }, 'Redis SET error');
     }
 }
 
@@ -79,9 +80,7 @@ export const getTopSellers = async (req, res, next) => {
             next(err);
         }
     } catch (error) {
-        const err = new Error('Failed to fetch top selling games from Steam API');
-        err.status = 500;
-        next(err);
+        next(error);
     }
 };
 
@@ -94,7 +93,7 @@ export const getOneGameDetails = async (req, res, next) => {
         return next(new Error('Game ID is required'));
     }
 
-    console.log(`Received request for game details: ${gameId}`);
+    logger.debug({ gameId }, 'Received request for game details');
 
     // ── Cache check ───────────────────────────────────────────────────────────
     const cacheKey = `game:details:${gameId}`;
@@ -152,7 +151,7 @@ export const getOneGameDetails = async (req, res, next) => {
             const releaseYear = data.released ? data.released.split('-')[0] : '';
             gameProfile.youtubeTrailer = await getGameTrailer(`${data.name} official game trailer ${releaseYear}`.trim());
         } catch (err) {
-            console.error("YouTube trailer fetch failed:", err.message);
+            logger.warn({ err }, 'YouTube trailer fetch failed');
         }
 
         // 🎬 RAWG Trailer
@@ -167,7 +166,7 @@ export const getOneGameDetails = async (req, res, next) => {
                 gameProfile.rawgTrailer = rawgData.max || rawgData[480] || null;
             }
         } catch (err) {
-            console.error("RAWG trailer fetch failed:", err.message);
+            logger.warn({ err }, 'RAWG trailer fetch failed');
         }
 
         // 💰 ITAD Integration (Production-Grade Matching)
@@ -175,7 +174,7 @@ export const getOneGameDetails = async (req, res, next) => {
             const ITAD_API_KEY = config.iTAD.apiKey;
 
             if (!ITAD_API_KEY) {
-                console.log("No ITAD API key provided");
+                logger.warn({ gameId }, 'No ITAD API key provided, skipping price data');
             } else {
 
                 // 🔍 Search ITAD
@@ -253,16 +252,16 @@ export const getOneGameDetails = async (req, res, next) => {
                     let selectedGame = null;
 
                     if (bestMatch && bestScore >= MATCH_THRESHOLD) {
-                        console.log(`Best ITAD match: ${bestMatch.title} (${bestScore})`);
+                        logger.debug({ title: bestMatch.title, score: bestScore }, 'Best ITAD match found');
                         selectedGame = bestMatch;
                     } else {
-                        console.log(`No strong match for: ${data.name} → ignoring ITAD deals`);
+                        logger.debug({ gameName: data.name }, 'No strong ITAD match, skipping deals');
                         selectedGame = null;
                     }
 
                     if (selectedGame) {
                         gameProfile.itadId = selectedGame.id;
-                        console.log("itad id" + gameProfile.itadId)
+                        logger.debug({ itadId: gameProfile.itadId }, 'ITAD ID resolved');
                         // 💰 Fetch prices
                         const pricesRes = await axiosClient.post(
                             "https://api.isthereanydeal.com/games/prices/v3",
@@ -301,7 +300,7 @@ export const getOneGameDetails = async (req, res, next) => {
                 }
             }
         } catch (itadErr) {
-            console.error("ITAD fetch failed:", itadErr.message);
+            logger.error({ err: itadErr }, 'ITAD fetch failed');
         }
 
         // ── Store full profile in cache ───────────────────────────────────────
@@ -310,10 +309,8 @@ export const getOneGameDetails = async (req, res, next) => {
         return res.json(gameProfile);
 
     } catch (error) {
-        console.error('Error fetching game details:', error.message);
-        const err = new Error('Failed to fetch game details from RAWG API');
-        err.status = 500;
-        next(err);
+        error.logContext = { gameId };
+        next(error);
     }
 };
 
@@ -336,10 +333,8 @@ export const getLandingPageImages = async (req, res, next) => {
         const results = response.data.results;
         await cacheSet(cacheKey, results, TTL_LANDING_PAGE);
         res.status(200).json(results);
-    }
-    catch (error) {
-        const err = new Error('Failed to fetch game images from the server');
-        next(err);
+    } catch (error) {
+        next(error);
     }
 }
 
@@ -358,7 +353,7 @@ export const searchGames = async (req, res, next) => {
     if (cached) return res.status(200).json(cached);
 
     try {
-        console.log(`Searching for games with query: ${query}`);
+        logger.debug({ query }, 'Game search request');
         const response = await axiosClient.get(`https://api.rawg.io/api/games?search=${query}&key=${RAWG_API_KEY}&page_size=20`);
 
         if (response.status === 200) {
@@ -376,8 +371,8 @@ export const searchGames = async (req, res, next) => {
             next(new Error('Failed to fetch search results from RAWG'));
         }
     } catch (error) {
-        console.error('Search error:', error.message);
-        next(new Error('Error searching for games'));
+        error.logContext = { query };
+        next(error);
     }
 };
 
@@ -434,7 +429,7 @@ export const getGameStores = async (req, res) => {
         return res.status(200).json({ stores: [] });
 
     } catch (error) {
-        console.error("ITAD stores fetch failed:", error.message);
+        logger.error({ err: error, itadId }, 'ITAD stores fetch failed');
         return res.status(200).json({ stores: [] });
     }
 };
@@ -515,7 +510,7 @@ export const getPriceHistory = async (req, res, next) => {
         return res.status(200).json(result);
 
     } catch (error) {
-        console.error("ITAD price history fetch failed:", error.message);
+        logger.error({ err: error, itadId }, 'ITAD price history fetch failed');
         return res.status(200).json({ history: [], series: {} });
     }
 };

@@ -33,9 +33,7 @@ function formatDate(dateStr) {
 }
 
 const fetchGame = async (id) => {
-    console.log(`Fetching data for game: ${id}`);
     const response = await apiClient.get(`/games/${id}`);
-    console.log(response.data.itadId);
     return response.data;
 };
 

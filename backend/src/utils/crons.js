@@ -4,6 +4,8 @@ import User from '../models/User.js';
 import axios from 'axios';
 import config from '../config/env.js';
 import Notification from '../models/Notification.js';
+import logger from './logger.js';
+import { maskEmail, hashId } from './logSanitize.js';
 import { generatePriceDropEmail, generateAccountPurgedEmail, generateAdminReportEmail, generateTokenExpiredEmail } from './emailTemplates.js';
 import { exchangeRefreshTokenForAuthTokens } from 'psn-api';
 import { isOAuthAuthFailure, needsRenewal } from './oauthHelpers.js';
@@ -27,7 +29,7 @@ const transporter = nodemailer.createTransport({
 export const startAdminReportCron = () => {
     // 0 8 * * * = 8:00 AM every day
     cron.schedule('0 8 * * *', async () => {
-        console.log('[Cron] Starting Daily Admin Report generation...');
+        logger.info({ cron: 'adminReport' }, '[Cron] Starting Daily Admin Report generation...');
         try {
             const totalUsers = await User.countDocuments();
             const activeUsers = await User.countDocuments({ isDeleted: false });
@@ -59,9 +61,9 @@ export const startAdminReportCron = () => {
                 html: generateAdminReportEmail(metrics)
             });
 
-            console.log(`[Cron] Admin Report sent successfully to ${targetEmail}.`);
+            logger.info({ email: maskEmail(targetEmail) }, '[Cron] Admin Report sent successfully.');
         } catch (error) {
-            console.error('[Cron] Admin Report cron error:', error.message);
+            logger.error({ err: error }, '[Cron] Admin Report cron error');
         }
     });
 };
@@ -73,10 +75,10 @@ export const startAdminReportCron = () => {
 export const startWishlistCron = () => {
     // 0 0 * * * = Midnight every day
     cron.schedule('0 0 * * *', async () => {
-        console.log('[Cron] Starting daily wishlist price check...');
+        logger.info({ cron: 'wishlist' }, '[Cron] Starting daily wishlist price check...');
 
         if (!ITAD_API_KEY) {
-            console.error('[Cron] ITAD API Key missing, skipping price check.');
+            logger.warn({ cron: 'wishlist' }, '[Cron] ITAD API Key missing, skipping price check.');
             return;
         }
 
@@ -105,7 +107,7 @@ export const startWishlistCron = () => {
                         priceMap[gamePrice.id] = gamePrice.deals || [];
                     });
                 } catch (err) {
-                    console.error(`[Cron] Batch price fetch failed for chunk starting at ${i}:`, err.message);
+                    logger.error({ err, chunkIndex: i }, '[Cron] Batch price fetch failed');
                 }
             }
 
@@ -163,10 +165,10 @@ export const startWishlistCron = () => {
                                 html: generatePriceDropEmail(user.name, item.gameName, item.gameId, storePriceDrops)
                             });
                         } catch (mailErr) {
-                            console.error(`[Cron] Failed to send price-drop email to ${user.email}:`, mailErr.message);
+                            logger.error({ err: mailErr, email: maskEmail(user.email) }, '[Cron] Failed to send price-drop email');
                         }
 
-                        console.log(`[Cron] Notified ${user.email} about price drops for ${item.gameName}`);
+                        logger.debug({ email: maskEmail(user.email), game: item.gameName }, '[Cron] Price drop notification sent');
                     }
                 }
 
@@ -174,9 +176,9 @@ export const startWishlistCron = () => {
                     await user.save();
                 }
             }
-            console.log('[Cron] Daily wishlist price check completed.');
+            logger.info({ cron: 'wishlist' }, '[Cron] Daily wishlist price check completed.');
         } catch (error) {
-            console.error('[Cron] Wishlist cron error:', error.message);
+            logger.error({ err: error }, '[Cron] Wishlist cron error');
         }
     });
 };
@@ -188,7 +190,7 @@ export const startWishlistCron = () => {
 export const startPurgeCron = () => {
     // 0 1 * * * = 1:00 AM every day
     cron.schedule('0 1 * * *', async () => {
-        console.log('[Cron] Starting 30-day soft-delete purge check...');
+        logger.info({ cron: 'purge' }, '[Cron] Starting 30-day soft-delete purge check...');
         try {
             const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
@@ -197,7 +199,7 @@ export const startPurgeCron = () => {
                 deletedAt: { $lte: cutoff }
             });
 
-            console.log(`[Cron] Found ${staleUsers.length} account(s) to permanently purge.`);
+            logger.info({ count: staleUsers.length }, '[Cron] Accounts queued for permanent purge');
 
             for (const user of staleUsers) {
                 // Send farewell email BEFORE deleting (so we still have email/name)
@@ -209,17 +211,17 @@ export const startPurgeCron = () => {
                         html: generateAccountPurgedEmail(user.name)
                     });
                 } catch (mailErr) {
-                    console.error(`[Cron] Failed to send purge email to ${user.email}:`, mailErr.message);
+                    logger.error({ err: mailErr, email: maskEmail(user.email) }, '[Cron] Failed to send purge email');
                 }
 
                 // Use document.deleteOne() to trigger the friends-cleanup pre-hook
                 await user.deleteOne();
-                console.log(`[Cron] Permanently purged user: ${user.publicID}`);
+                logger.debug({ publicID: hashId(user.publicID) }, '[Cron] User permanently purged');
             }
 
-            console.log('[Cron] 30-day purge completed.');
+            logger.info({ cron: 'purge' }, '[Cron] 30-day purge completed.');
         } catch (error) {
-            console.error('[Cron] Purge cron error:', error.message);
+            logger.error({ err: error }, '[Cron] Purge cron error');
         }
     });
 };
@@ -239,7 +241,7 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export const startTokenRefreshCron = () => {
     // 0 3 * * * = 3:00 AM every day
     cron.schedule('0 3 * * *', async () => {
-        console.log('[Cron:TokenRefresh] Starting proactive token rotation...');
+        logger.info({ cron: 'tokenRefresh' }, '[Cron:TokenRefresh] Starting proactive token rotation...');
 
         const APP_URL = config.appFrontendUrl || 'http://localhost:5173';
         const CLIENT_ID = config.azure.clientId;
@@ -256,7 +258,7 @@ export const startTokenRefreshCron = () => {
                 ]
             }).select('+linkedAccounts');
 
-            console.log(`[Cron:TokenRefresh] Found ${users.length} user(s) with PSN/Xbox accounts.`);
+            logger.info({ count: users.length }, '[Cron:TokenRefresh] Users with PSN/Xbox accounts found');
 
             for (const user of users) {
                 const linkedAccounts = user.linkedAccounts || new Map();
@@ -270,11 +272,11 @@ export const startTokenRefreshCron = () => {
 
                     // PSN ~60 day lifetime — renew when within 20 days
                     if (!needsRenewal(account.expiresAt, 20)) {
-                        console.log(`[Cron:TokenRefresh] PSN ${account.accountId} — token OK, skipping.`);
+                        logger.debug({ accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] PSN token OK, skipping');
                         continue;
                     }
 
-                    console.log(`[Cron:TokenRefresh] Renewing PSN token for ${account.accountId}...`);
+                    logger.debug({ accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] Renewing PSN token');
                     try {
                         const updatedAuth = await exchangeRefreshTokenForAuthTokens(account.refreshToken);
 
@@ -289,10 +291,10 @@ export const startTokenRefreshCron = () => {
                         account.tokenStatus = 'active';
                         account.lastSync = new Date();
                         userModified = true;
-                        console.log(`[Cron:TokenRefresh] PSN ${account.accountId} — renewed. Expires: ${account.expiresAt}`);
+                        logger.debug({ accountId: hashId(account.accountId), expiresAt: account.expiresAt }, '[Cron:TokenRefresh] PSN token renewed');
                     } catch (err) {
                         if (isOAuthAuthFailure(err)) {
-                            console.warn(`[Cron:TokenRefresh] PSN ${account.accountId} — auth failure, marking invalid.`);
+                            logger.warn({ accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] PSN auth failure, marking invalid');
                             account.tokenStatus = 'invalid';
                             userModified = true;
 
@@ -305,7 +307,7 @@ export const startTokenRefreshCron = () => {
                                     link: '/library/sync/psn'
                                 });
                             } catch (notifErr) {
-                                console.error(`[Cron:TokenRefresh] PSN notification failed for ${user.publicID}:`, notifErr.message);
+                                logger.error({ err: notifErr, publicID: hashId(user.publicID) }, '[Cron:TokenRefresh] PSN notification failed');
                             }
 
                             try {
@@ -316,11 +318,11 @@ export const startTokenRefreshCron = () => {
                                     html: generateTokenExpiredEmail(user.name, 'PSN', `${APP_URL}/library/sync/psn`)
                                 });
                             } catch (mailErr) {
-                                console.error(`[Cron:TokenRefresh] PSN expiry email failed for ${user.email}:`, mailErr.message);
+                                logger.error({ err: mailErr, email: maskEmail(user.email) }, '[Cron:TokenRefresh] PSN expiry email failed');
                             }
                         } else {
                             // Transient error (network, timeout) — don't invalidate the token
-                            console.error(`[Cron:TokenRefresh] PSN ${account.accountId} — transient error:`, err.message);
+                            logger.error({ err: err, accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] PSN transient error');
                         }
                     }
 
@@ -335,11 +337,11 @@ export const startTokenRefreshCron = () => {
 
                     // Xbox ~90 day lifetime — renew when within 25 days
                     if (!needsRenewal(account.expiresAt, 25)) {
-                        console.log(`[Cron:TokenRefresh] Xbox ${account.accountId} — token OK, skipping.`);
+                        logger.debug({ accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] Xbox token OK, skipping');
                         continue;
                     }
 
-                    console.log(`[Cron:TokenRefresh] Renewing Xbox token for ${account.accountId}...`);
+                    logger.debug({ accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] Renewing Xbox token');
                     try {
                         const tokenRes = await axios.post(
                             'https://login.live.com/oauth20_token.srf',
@@ -359,10 +361,10 @@ export const startTokenRefreshCron = () => {
                         account.tokenStatus = 'active';
                         account.lastSync = new Date();
                         userModified = true;
-                        console.log(`[Cron:TokenRefresh] Xbox ${account.accountId} — token renewed.`);
+                        logger.debug({ accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] Xbox token renewed');
                     } catch (err) {
                         if (isOAuthAuthFailure(err)) {
-                            console.warn(`[Cron:TokenRefresh] Xbox ${account.accountId} — auth failure, marking invalid.`);
+                            logger.warn({ accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] Xbox auth failure, marking invalid');
                             account.tokenStatus = 'invalid';
                             userModified = true;
 
@@ -375,7 +377,7 @@ export const startTokenRefreshCron = () => {
                                     link: '/library/sync/xbox'
                                 });
                             } catch (notifErr) {
-                                console.error(`[Cron:TokenRefresh] Xbox notification failed for ${user.publicID}:`, notifErr.message);
+                                logger.error({ err: notifErr, publicID: hashId(user.publicID) }, '[Cron:TokenRefresh] Xbox notification failed');
                             }
 
                             try {
@@ -386,10 +388,10 @@ export const startTokenRefreshCron = () => {
                                     html: generateTokenExpiredEmail(user.name, 'Xbox', `${APP_URL}/library/sync/xbox`)
                                 });
                             } catch (mailErr) {
-                                console.error(`[Cron:TokenRefresh] Xbox expiry email failed for ${user.email}:`, mailErr.message);
+                                logger.error({ err: mailErr, email: maskEmail(user.email) }, '[Cron:TokenRefresh] Xbox expiry email failed');
                             }
                         } else {
-                            console.error(`[Cron:TokenRefresh] Xbox ${account.accountId} — transient error:`, err.message);
+                            logger.error({ err: err, accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] Xbox transient error');
                         }
                     }
 
@@ -402,9 +404,9 @@ export const startTokenRefreshCron = () => {
                 }
             }
 
-            console.log('[Cron:TokenRefresh] Token rotation complete.');
+            logger.info({ cron: 'tokenRefresh' }, '[Cron:TokenRefresh] Token rotation complete.');
         } catch (error) {
-            console.error('[Cron:TokenRefresh] Fatal cron error:', error.message);
+            logger.error({ err: error }, '[Cron:TokenRefresh] Fatal cron error');
         }
     });
 };

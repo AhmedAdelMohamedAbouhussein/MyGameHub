@@ -60,6 +60,19 @@ const generatePublicID = async function (name) {
     return newID;
 };
 
+const generateProfileHandle = async function () {
+    let isUnique = false;
+    let handle;
+
+    while (!isUnique) {
+        handle = nanoid(10); // e.g. "V1StGXR8_Z"
+        const existing = await mongoose.models.User.findOne({ profileHandle: handle });
+        if (!existing) isUnique = true;
+    }
+
+    return handle;
+};
+
 const linkedAccountSchema = new mongoose.Schema({
     accountId: { type: String, required: true },
     displayName: { type: String },
@@ -96,6 +109,11 @@ const UserSchema = new mongoose.Schema({
         type: String,
         unique: true,
         required: true,
+    },
+    profileHandle: {
+        type: String,
+        unique: true,
+        sparse: true, // allows null during migration
     },
     email: {
         type: String,
@@ -309,6 +327,9 @@ UserSchema.set('toObject', {
 UserSchema.pre('validate', async function (next) {
     if (!this.publicID) {
         this.publicID = await generatePublicID(this.name);
+    }
+    if (!this.profileHandle) {
+        this.profileHandle = await generateProfileHandle();
     }
     next();
 });

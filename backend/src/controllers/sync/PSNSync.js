@@ -2,6 +2,8 @@ import { exchangeAccessCodeForAuthTokens, exchangeNpssoForAccessCode, getProfile
 import { getAllOwnedGames, getFriendList } from "../allPSNInfo.js";
 import userModel from "../../models/User.js";
 import { uploadImageFromUrl } from "../../utils/imageUpload.js";
+import logger from "../../utils/logger.js";
+import { hashId } from "../../utils/logSanitize.js";
 
 export const PSNloginWithNpsso = async (req, res, next) => {
     try {
@@ -129,12 +131,11 @@ export const PSNloginWithNpsso = async (req, res, next) => {
 
         await dbUser.save();
 
-        console.log("PSN multi-account sync completed for user:", userId);
+        logger.info({ userId: hashId(userId) }, 'PSN multi-account sync completed');
         res.status(200).json({ message: "PSN synced successfully" });
     }
     catch (error) {
-        console.error("PSN sync error:", error);
-        const err = new Error("PSN login failed. Ensure NPSSO is valid.");
-        next(err);
+        error.logContext = { userId: hashId(userId) };
+        next(error);
     }
 };

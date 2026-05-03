@@ -461,7 +461,7 @@ router.get('/community/all', getCommunityUsers);
  *       404:
  *         description: User not found
  */
-router.get('/profile/:publicID', getPublicProfile);
+router.get('/profile/:handle', getPublicProfile);
 
 /**
  * @swagger
