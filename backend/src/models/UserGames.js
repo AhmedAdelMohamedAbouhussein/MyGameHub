@@ -6,6 +6,8 @@ const ownerSchema = new mongoose.Schema({
     hoursPlayed: { type: String, default: null },
     lastPlayed: { type: Date, default: null },
     progress: { type: Number, default: 0, min: 0, max: 100 },
+    currentGamerscore: { type: Number },
+    maxGamerscore: { type: Number },
     achievements: [
         {
             id: { type: String }, // Platform-specific achievement ID
@@ -14,6 +16,7 @@ const ownerSchema = new mongoose.Schema({
             unlocked: { type: Boolean, default: false },
             dateUnlocked: { type: Date },
             type: { type: String, enum: ["default", "bronze", "silver", "gold", "platinum"], default: "default" },
+            gamerscore: { type: Number },
         }
     ]
 }, { _id: false });

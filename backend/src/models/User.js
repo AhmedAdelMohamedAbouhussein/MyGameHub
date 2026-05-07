@@ -295,6 +295,8 @@ UserSchema.set('toJSON',
             delete ret.ownedGames;
             delete ret.friends;
             delete ret.wishlist;
+            delete ret.likes;
+            delete ret.deletedAt;
             delete ret.updatedAt;
             delete ret.signupDate;
             delete ret.createdAt;

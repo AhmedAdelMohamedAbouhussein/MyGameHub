@@ -3,7 +3,7 @@ import { FaArrowLeft } from "react-icons/fa";
 
 const BackButton = ({ className = "", variant = "absolute" }) => {
     const navigate = useNavigate();
-    const positionClass = variant === "absolute" ? "absolute top-6 left-4 sm:left-8 z-50" : "relative mb-6";
+    const positionClass = variant === "absolute" ? "absolute top-6 left-4 sm:left-8 z-30" : "relative mb-6";
 
     return (
         <div className={`${positionClass} ${className}`}>

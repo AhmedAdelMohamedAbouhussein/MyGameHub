@@ -4,7 +4,8 @@ import pLimit from "p-limit";
 import http from "http";
 import https from "https";
 import config from "../config/env.js";
-import { uploadImageFromUrl } from "../utils/imageUpload.js";
+import { uploadImageFromUrl } from "../utils/imageUpload.js"
+import logger from "../utils/logger.js";
 import { hashId } from "../utils/logSanitize.js";
 
 const STEAM_API_KEY = config.steam.apiKey;
@@ -99,7 +100,7 @@ export async function getUserAchievements(steamId, games) {
                 const progress = parsed.length ? Number(((completedCount / parsed.length) * 100).toFixed(2)) : 0;
                 return { ...game, achievements: parsed, progress };
             } catch (err) {
-                logger.warn({ gameName: game.gameName, gameId: game.gameId, err }, 'Steam achievements fetch failed');
+                logger.debug({ gameName: game.gameName, gameId: game.gameId, err }, 'Steam achievements fetch failed');
                 return { ...game, achievements: [], progress: 0 };
             }
         })

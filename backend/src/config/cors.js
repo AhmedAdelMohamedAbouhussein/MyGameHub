@@ -6,7 +6,7 @@ const allowedOrigins = [
 ];
 
 if (config.frontendUrl && !allowedOrigins.includes(config.frontendUrl)) {
-    allowedOrigins.push(config.frontendUrl);
+  allowedOrigins.push(config.frontendUrl);
 }
 
 const corsOptions = {

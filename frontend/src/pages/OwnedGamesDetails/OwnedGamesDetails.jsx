@@ -132,11 +132,16 @@ function OwnedGamesDetails() {
               {ach.description}
             </p>
             <div className="flex items-center gap-2 pt-1">
-              <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${isUnlocked ? 'bg-success/20 text-success' : 'bg-red-600 text-white px-3'}`}>
+              <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md flex-shrink-0 ${isUnlocked ? 'bg-success/20 text-success' : 'bg-red-600 text-white px-3'}`}>
                 {isUnlocked ? 'Completed' : 'Locked'}
               </span>
+              {ach.gamerscore > 0 && (
+                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-[#107C10]/20 text-[#107C10] flex-shrink-0">
+                  {ach.gamerscore} GS
+                </span>
+              )}
               {isUnlocked && (
-                <p className="text-[9px] text-text-muted font-bold">
+                <p className="text-[9px] text-text-muted font-bold truncate">
                   {formattedDate}
                 </p>
               )}
@@ -307,11 +312,20 @@ function OwnedGamesDetails() {
                   Achievement Logs
                 </h2>
                 {selectedOwner && (
-                  <div className="text-center sm:text-right flex flex-col items-center sm:items-end">
+                  <div className="text-center sm:text-right flex flex-col items-center sm:items-end flex-shrink-0">
                     <p className="text-[10px] sm:text-[11px] font-black text-accent uppercase tracking-[0.3em] mb-1">Completion Index</p>
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl font-black text-text-primary tabular-nums">{(selectedOwner.achievements?.filter(a => a.unlocked).length || 0)}</span>
                       <span className="text-text-muted font-bold">/ {selectedOwner.achievements?.length || 0}</span>
+                    </div>
+                  </div>
+                )}
+                {selectedOwner && selectedOwner.maxGamerscore > 0 && (
+                  <div className="text-center sm:text-right flex flex-col items-center sm:items-end flex-shrink-0">
+                    <p className="text-[10px] sm:text-[11px] font-black text-[#107C10] uppercase tracking-[0.3em] mb-1">Gamerscore</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black text-text-primary tabular-nums">{selectedOwner.currentGamerscore || 0}</span>
+                      <span className="text-text-muted font-bold">/ {selectedOwner.maxGamerscore}</span>
                     </div>
                   </div>
                 )}

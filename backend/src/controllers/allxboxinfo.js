@@ -142,6 +142,8 @@ export async function getXboxOwnedGames(xuid, userHash, xstsToken) {
             hoursPlayed: null,
             achievements: [],
             progress: null,
+            currentGamerscore: game.currentGamerscore || 0,
+            maxGamerscore: game.maxGamerscore || 0,
         }));
 
     } catch (err) {
@@ -165,12 +167,22 @@ export async function getXboxAchievements(xuid, titleId, userHash, xstsToken) {
             }
         );
 
-        return (res.data.achievements || []).map(ach => ({
-            title: ach.name,
-            description: ach.description || "No description",
-            unlocked: ach.progressState === "Achieved",
-            dateUnlocked: ach.progressState === "Achieved" ? new Date(ach.progression?.timeUnlocked) : null,
-        }));
+        return (res.data.achievements || []).map(ach => {
+            let gamerscore = 0;
+            if (ach.rewards && ach.rewards.length > 0) {
+                const gsReward = ach.rewards.find(r => r.type === "Gamerscore");
+                if (gsReward) gamerscore = parseInt(gsReward.value, 10) || 0;
+            }
+
+            return {
+                id: ach.id,
+                title: ach.name,
+                description: ach.description || "No description",
+                unlocked: ach.progressState === "Achieved",
+                dateUnlocked: ach.progressState === "Achieved" ? new Date(ach.progression?.timeUnlocked) : null,
+                gamerscore
+            };
+        });
 
     } catch (err) {
         logger.warn({ titleId, err }, 'Xbox achievements fetch failed');

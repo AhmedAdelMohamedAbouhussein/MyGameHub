@@ -104,7 +104,7 @@ function Header() {
                         </Link>
 
                         {/* Desktop Nav */}
-                        <nav className="hidden md:flex items-center gap-1">
+                        <nav className="hidden lg:flex items-center gap-1">
                             {navLinks.map(link => (
                                 <Link
                                     key={link.to}
@@ -153,7 +153,7 @@ function Header() {
                         </nav>
 
                         {/* Desktop User Actions */}
-                        <div className="hidden md:flex items-center gap-3">
+                        <div className="hidden lg:flex items-center gap-3">
                             {user ? (
                                 <>
                                     {/* Notification Center */}
@@ -329,7 +329,7 @@ function Header() {
                         {/* Mobile Button */}
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
-                            className="md:hidden text-white p-2 hover:bg-midnight-600 rounded-lg transition"
+                            className="lg:hidden text-white p-2 hover:bg-midnight-600 rounded-lg transition"
                         >
                             <FaBars size={22} />
                         </button>
@@ -339,7 +339,7 @@ function Header() {
 
             {/* ================= MOBILE BACKDROP ================= */}
             <div
-                className={`fixed inset-0 z-40 md:hidden transition-opacity duration-300
+                className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-300
                 ${isMobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}
                 bg-black/40 backdrop-blur-sm`}
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -348,7 +348,7 @@ function Header() {
             {/* ================= MOBILE DRAWER ================= */}
             <div
                 className={`
-                    fixed top-0 left-0 z-50 h-full w-72 md:hidden
+                    fixed top-0 left-0 z-50 h-full w-72 lg:hidden
                     bg-midnight-800/70 backdrop-blur-2xl
                     border-r border-white/10
                     shadow-2xl shadow-black/50

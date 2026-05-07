@@ -54,7 +54,7 @@ export const updateProfile = async (req, res, next) => {
             userId,
             { $set: updateData },
             { new: true, runValidators: true }
-        );
+        ).select('+password');
 
         if (!updatedUser) {
             return res.status(404).json({ message: "User not found" });

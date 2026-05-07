@@ -229,14 +229,14 @@ function LandingPage() {
 
               <div className="space-y-8 animate-in slide-in-from-left-4 duration-700">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-black text-accent uppercase tracking-widest">
-                  <FaGamepad /> Level up your gaming
+                  <FaGamepad /> Auto-Sync Your Libraries
                 </div>
                 <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight text-text-primary uppercase leading-none">
-                  Every game.<br />
+                  All Your Games.<br />
                   <span className="text-transparent bg-gradient-to-r from-accent via-blue-400 to-indigo-400 bg-clip-text">One Unified Hub</span>
                 </h1>
                 <p className="text-lg text-text-secondary max-w-lg leading-relaxed font-medium">
-                  Manage your library, discover deep deals, and grow your gaming circle across all platforms in our next-gen social ecosystem.
+                  Automatically sync your Steam, PlayStation, Xbox, and Epic Games libraries into one beautiful collection. Discover deals, track friends, and manage your backlog instantly.
                 </p>
                 <div className="flex flex-wrap gap-4 pt-4">
                   {user ? (
@@ -257,9 +257,10 @@ function LandingPage() {
                   ) : (
                     <button
                       onClick={() => navigate("/login")}
-                      className="px-8 py-4 bg-accent text-white font-black uppercase tracking-widest rounded-2xl hover:bg-accent-hover active:scale-95 transition-all shadow-xl shadow-accent/20 flex items-center gap-3 group"
+                      className="px-6 py-3 bg-accent text-white font-black uppercase tracking-widest rounded-2xl hover:bg-accent-hover active:scale-95 transition-all shadow-xl shadow-accent/20 flex flex-col items-center justify-center gap-0.5 group w-full sm:w-auto"
                     >
-                      Login to GameHub <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                      <span className="flex items-center gap-2">Start Syncing Free <FaArrowRight className="group-hover:translate-x-1 transition-transform" /></span>
+                      <span className="text-[9px] font-bold text-white/70 normal-case tracking-normal">Steam, PSN, Xbox & Epic Supported</span>
                     </button>
                   )}
                   <button
@@ -274,16 +275,16 @@ function LandingPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in slide-in-from-right-4 duration-700">
                 {/* Library Feature */}
                 <div
-                  onClick={() => navigate("/library")}
+                  onClick={() => navigate(user ? "/library" : "/login")}
                   className="group relative p-10 rounded-3xl bg-midnight-700/40 border border-midnight-500/20 hover:border-accent/40 transition-all duration-500 cursor-pointer overflow-hidden h-[280px] flex flex-col items-center justify-center text-center"
                 >
                   <div className="absolute -top-10 -right-10 w-32 h-32 bg-accent/5 rounded-full blur-2xl group-hover:bg-accent/10 transition-all" />
-                  <div className="w-20 h-20 rounded-3xl bg-midnight-800 flex items-center justify-center text-accent shadow-2xl text-4xl font-bold mb-6 group-hover:scale-110 group-hover:bg-accent group-hover:text-white transition-all">
-                    📚
+                  <div className="w-20 h-20 rounded-3xl bg-midnight-800 flex items-center justify-center gap-2 text-accent shadow-2xl p-4 mb-6 group-hover:scale-110 group-hover:bg-accent group-hover:text-white transition-all">
+                    <FaSteam size={20} /> <FaPlaystation size={20} /> <FaXbox size={20} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-white uppercase mb-2">My Library</h3>
-                    <p className="text-xs text-text-muted font-medium max-w-[180px] mx-auto">Your collection, perfectly organized across all platforms.</p>
+                    <h3 className="text-2xl font-black text-white uppercase mb-2">Auto-Sync Library</h3>
+                    <p className="text-xs text-text-muted font-medium max-w-[180px] mx-auto">Connect your accounts and watch your entire collection organize itself instantly.</p>
                   </div>
                 </div>
 

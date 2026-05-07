@@ -109,11 +109,26 @@ export const getOneGameDetails = async (req, res, next) => {
         );
 
         // ✅ Stores
-        const formattedStores =
+        let formattedStores =
             data.stores?.map(s => ({
+                storeId: s.store.id,
                 name: s.store.name,
                 url: s.url
             })) || [];
+
+        try {
+            const storesRes = await axiosClient.get(`https://api.rawg.io/api/games/${gameId}/stores`, { params: { key: RAWG_API_KEY } });
+            if (storesRes.data?.results) {
+                storesRes.data.results.forEach(realStore => {
+                    const match = formattedStores.find(fs => fs.storeId === realStore.store_id);
+                    if (match && realStore.url) {
+                        match.url = realStore.url;
+                    }
+                });
+            }
+        } catch (err) {
+            logger.warn({ err }, 'RAWG real store URLs fetch failed');
+        }
 
         // ✅ Platforms
         const formattedPlatforms =

@@ -274,11 +274,24 @@ export const getUserFriendList = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Convert Map -> plain object
+    // Determine if the requester is the owner of the profile
+    const isOwner = req.session.userId && user._id.toString() === req.session.userId;
+
+    // Convert Map -> plain object, and scrub sensitive IDs if not owner
     const friends = {};
     if (user.friends) {
       for (const [platform, friendArray] of user.friends.entries()) {
-        friends[platform] = friendArray; // friendArray is already plain objects
+        if (platform !== "User" && !isOwner) {
+          // Scrub externalId and linkedAccountId for public viewing
+          friends[platform] = friendArray.map(f => {
+            const clean = f.toObject ? f.toObject() : { ...f };
+            delete clean.externalId;
+            delete clean.linkedAccountId;
+            return clean;
+          });
+        } else {
+          friends[platform] = friendArray; // friendArray is already plain objects
+        }
       }
     }
 

@@ -465,7 +465,7 @@ function ManagePublicProfile() {
                                 />
                                 <p className="text-[10px] text-right text-text-muted">{masterpieceQuote.length} / 100</p>
 
-                                {masterpieceGame && (
+                                {masterpieceGame?.gameName && (
                                     <div className="p-4 rounded-xl bg-amber-400/10 border border-amber-400/20">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-1">Preview</p>
                                         <p className="text-xs text-white">Featured: <span className="font-bold">{masterpieceGame.gameName}</span></p>

@@ -5,7 +5,6 @@ import apiClient from "../../utils/apiClient.js";
 
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
-import Aside from "../../components/Aside/Aside";
 import LoadingScreen from "../../components/LoadingScreen/LoadingScreen";
 import AuthContext from "../../contexts/AuthContext.jsx";
 
@@ -39,8 +38,7 @@ function CommunityPage() {
 
     return (
         <div className="page-container flex flex-col lg:flex-row h-screen overflow-hidden">
-            <Aside />
-            <Aside isOpen={mobileAsideOpen} onClose={() => setMobileAsideOpen(false)} />
+
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 <Header />
                 <main className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-8 lg:p-12 relative z-10">

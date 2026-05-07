@@ -8,7 +8,7 @@ import Footer from "../../components/Footer/Footer";
 import Aside from "../../components/Aside/Aside";
 import AuthContext from "../../contexts/AuthContext";
 
-import { FaGamepad, FaSteam, FaXbox, FaSearch, FaUserFriends, FaBars, FaExternalLinkAlt, FaCopy } from "react-icons/fa";
+import { FaGamepad, FaSteam, FaXbox, FaSearch, FaUserFriends, FaBars, FaExternalLinkAlt, FaCopy, FaClock } from "react-icons/fa";
 import { SiEpicgames, SiGogdotcom, SiPlaystation } from "react-icons/si";
 import LoadingScreen from "../../components/LoadingScreen/LoadingScreen";
 import { toast } from "sonner";
@@ -215,7 +215,7 @@ function FriendsPage() {
                                                         </p>
                                                     </div>
                                                     {sourceAccount && (
-                                                        <div className="flex flex-col items-end">
+                                                        <div className="flex flex-col items-end flex-shrink-0 ml-2">
                                                             <p className="text-[8px] font-black text-white/40 uppercase tracking-tighter mb-1">Via Account</p>
                                                             <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/5" title={`Synced from your account: ${sourceAccount.displayName || sourceAccount.accountId}`}>
                                                                 {sourceAccount.avatar && <img src={sourceAccount.avatar} className="w-3 h-3 rounded-full" />}
@@ -225,34 +225,45 @@ function FriendsPage() {
                                                     )}
                                                 </div>
 
-                                                <div className="flex items-center gap-3 mt-3">
-                                                    {currentPlatform === "User" ? (
-                                                        <Link
-                                                            to={`/profile/${encodeURIComponent(friend.profileHandle || friend.publicID)}`}
-                                                            className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-[9px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all"
-                                                        >
-                                                            Profile
-                                                        </Link>
-                                                    ) : (
-                                                        friend.profileUrl && (
-                                                            <a
-                                                                href={friend.profileUrl}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-[9px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all flex items-center gap-1.5"
+                                                <div className="flex items-center justify-between mt-3">
+                                                    <div className="flex items-center gap-3">
+                                                        {currentPlatform === "User" ? (
+                                                            <Link
+                                                                to={`/profile/${encodeURIComponent(friend.profileHandle || friend.publicID)}`}
+                                                                className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-[9px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all"
                                                             >
-                                                                External <FaExternalLinkAlt size={8} />
-                                                            </a>
-                                                        )
-                                                    )}
+                                                                Profile
+                                                            </Link>
+                                                        ) : (
+                                                            friend.profileUrl && (
+                                                                <a
+                                                                    href={friend.profileUrl}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-[9px] font-black uppercase tracking-widest hover:bg-accent hover:text-white transition-all flex items-center gap-1.5"
+                                                                >
+                                                                    External <FaExternalLinkAlt size={8} />
+                                                                </a>
+                                                            )
+                                                        )}
 
-                                                    <button
-                                                        onClick={() => copyToClipboard(friend.publicID || friend.externalId)}
-                                                        className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-white/5 transition-all"
-                                                        title="Copy ID"
-                                                    >
-                                                        <FaCopy size={12} />
-                                                    </button>
+                                                        {currentPlatform === "User" && (
+                                                            <button
+                                                                onClick={() => copyToClipboard(friend.publicID || friend.profileHandle)}
+                                                                className="p-2 rounded-lg bg-midnight-700/50 text-text-muted hover:text-white hover:bg-midnight-600 transition-colors"
+                                                                title="Copy ID"
+                                                            >
+                                                                <FaCopy size={12} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {friend.friendsSince && (
+                                                        <p className="text-[9px] font-bold text-text-muted/60 uppercase tracking-widest flex items-center gap-1.5 flex-shrink-0 ml-2">
+                                                            <FaClock className="text-white/20" size={10} />
+                                                            {new Date(friend.friendsSince).toLocaleDateString()}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
 

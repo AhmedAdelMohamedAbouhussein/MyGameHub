@@ -3,6 +3,7 @@ import config from '../../config/env.js'
 import userModel from "../../models/User.js";
 import { uploadImageFromUrl } from "../../utils/imageUpload.js";
 import logger from "../../utils/logger.js";
+import { hashId } from '../../utils/logSanitize.js';
 
 
 const APP_FRONTEND_URL = config.frontendUrl;
@@ -190,6 +191,8 @@ export async function xboxReturn(req, res) {
                 hoursPlayed: game.hoursPlayed,
                 lastPlayed: game.lastPlayed,
                 progress: game.progress || 0,
+                currentGamerscore: game.currentGamerscore || 0,
+                maxGamerscore: game.maxGamerscore || 0,
                 achievements: game.achievements || []
             };
 

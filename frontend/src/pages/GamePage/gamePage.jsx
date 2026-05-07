@@ -435,18 +435,31 @@ const GamePage = () => {
                                 <div className="bg-midnight-800/40 backdrop-blur-md rounded-[2.5rem] p-6 sm:p-8 border border-white/5">
                                     <h4 className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-6">Digital Distributors</h4>
                                     <div className="space-y-2">
-                                        {game.stores.map((storeConfig, idx) => (
-                                            <a
-                                                key={idx}
-                                                href={storeConfig.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={`flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl border text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all ${STORE_COLORS[storeConfig.name] || 'bg-midnight-700/50 border-white/5 hover:bg-midnight-600'}`}
-                                            >
-                                                <span>{storeConfig.name}</span>
-                                                <FaExternalLinkAlt size={8} />
-                                            </a>
-                                        ))}
+                                        {game.stores.map((storeConfig, idx) => {
+                                            const storeColorClass = STORE_COLORS[storeConfig.name] || 'bg-midnight-700/50 border-white/5 hover:bg-midnight-600';
+                                            const commonClasses = `flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl border text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all ${storeColorClass}`;
+                                            
+                                            if (storeConfig.url) {
+                                                return (
+                                                    <a
+                                                        key={idx}
+                                                        href={storeConfig.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className={commonClasses}
+                                                    >
+                                                        <span>{storeConfig.name}</span>
+                                                        <FaExternalLinkAlt size={8} />
+                                                    </a>
+                                                );
+                                            }
+                                            
+                                            return (
+                                                <div key={idx} className={commonClasses}>
+                                                    <span>{storeConfig.name}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}

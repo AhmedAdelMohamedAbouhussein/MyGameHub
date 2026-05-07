@@ -66,3 +66,4 @@ jobs:
           IV_LENGTH: 16
           BCRYPT_SALT_ROUNDS: 10
           ALGORITHM: aes-256-cbc
+          LOG_SALT: test-log-salt-for-ci

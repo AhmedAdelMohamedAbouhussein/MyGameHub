@@ -93,11 +93,12 @@ function ViewProfilePage() {
             navigate('/login');
             return;
         }
-        friendMutation.mutate({ action, id: publicID });
+        // Use the real publicID from the profile data, not the URL param (which is the profileHandle)
+        friendMutation.mutate({ action, id: data.publicID });
     };
 
     const renderFriendButton = () => {
-        if (publicID === currentUser?.publicID) return null;
+        if (data.publicID === currentUser?.publicID) return null;
 
         switch (friendshipStatus) {
             case "accepted":
@@ -170,7 +171,7 @@ function ViewProfilePage() {
                     />
                     {/* Dark gradient overlay to ensure text is readable */}
                     {/* Crystal clear background overlay */}
-                    <div className="fixed inset-0 z-0 bg-gradient-to-b from-midnight-900/40 via-midnight-900/10 to-midnight-900/60" />
+                    <div className="fixed inset-0 z-0 bg-gradient-to-b from-midnight-900/40 via-midnight-900/70 to-midnight-900/60" />
                 </>
             )}
 
@@ -269,7 +270,7 @@ function ViewProfilePage() {
                     </div>
 
                     {/* Masterpiece Slot */}
-                    {masterpieceGame && (
+                    {masterpieceGame?.gameName && (
                         <div className="relative group animate-in fade-in slide-in-from-bottom-4 duration-1000">
                             <div className="absolute inset-0 bg-amber-400/10 blur-[120px] rounded-full scale-90 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
 

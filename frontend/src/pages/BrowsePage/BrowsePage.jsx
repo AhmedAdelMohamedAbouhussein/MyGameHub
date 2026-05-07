@@ -84,7 +84,7 @@ const BrowseGamesPage = () => {
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') setDebouncedSearch(searchTerm);
                                             }}
-                                            placeholder="Search games, publishers, or genres..."
+                                            placeholder="Search games..."
                                             className="flex-1 h-14 bg-transparent pl-4 pr-6 text-base font-bold text-white placeholder:text-text-muted outline-none"
                                         />
                                         <button

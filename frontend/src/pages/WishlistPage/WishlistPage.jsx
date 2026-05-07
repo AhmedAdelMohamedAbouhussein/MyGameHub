@@ -83,7 +83,7 @@ const WishlistPage = () => {
                                                 e.stopPropagation();
                                                 toggleWishlistMutation.mutate(game.id);
                                             }}
-                                            className="absolute top-4 right-4 p-3 rounded-2xl bg-red-500/10 backdrop-blur-md border border-red-500/20 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                                            className="absolute top-4 right-4 p-3 rounded-2xl bg-red-500/10 backdrop-blur-md border border-red-500/20 text-red-500 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
                                             title="Remove from Wishlist"
                                         >
                                             <FaTrash size={14} />

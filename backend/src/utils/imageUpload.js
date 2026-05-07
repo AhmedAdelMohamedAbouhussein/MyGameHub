@@ -13,7 +13,7 @@ cloudinary.config({
 
 // Shared image settings
 const AVATAR_SIZE = 240;
-const AVATAR_QUALITY = 55;
+const AVATAR_QUALITY = 75;
 
 const DEFAULT_QUALITY = 70;
 const DEFAULT_WIDTH = 1920;
