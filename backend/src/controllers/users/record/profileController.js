@@ -204,9 +204,10 @@ export const getCommunityUsers = async (req, res, next) => {
             if (typeof search !== 'string') {
                 return res.status(400).json({ message: "Search parameter must be a string" });
             }
+            const safe = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             query.$or = [
-                { name: { $regex: search, $options: "i" } },
-                { publicID: { $regex: search, $options: "i" } }
+                { name: { $regex: safe, $options: "i" } },
+                { publicID: { $regex: safe, $options: "i" } }
             ];
         }
 

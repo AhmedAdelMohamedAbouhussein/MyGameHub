@@ -1,6 +1,7 @@
 import express from 'express';
 
 import { sendOtp } from '../controllers/nodeMailer/sendOtp.js';
+import { authLimiter } from '../middleware/rateLimiter.js';
 import { verifyOtp } from '../controllers/nodeMailer/verifyOtp.js';
 
 const router = express.Router();
@@ -61,7 +62,7 @@ const router = express.Router();
  *       429:
  *         description: Maximum OTP resend attempts reached
  */
-router.post('/sendotp', sendOtp);
+router.post('/sendotp', authLimiter, sendOtp);
 
 /**
  * @swagger
@@ -119,6 +120,6 @@ router.post('/sendotp', sendOtp);
  *       429:
  *         description: Too many failed OTP attempts
  */
-router.post('/verifyOtp', verifyOtp);
+router.post('/verifyOtp', authLimiter, verifyOtp);
 
 export default router;

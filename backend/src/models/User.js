@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { nanoid } from "nanoid";
 import { deleteImageByUrl } from '../utils/imageUpload.js';
 import config from '../config/env.js';
+import logger from '../utils/logger.js';
 import userGameSchema from './UserGames.js';
 
 const algorithm = config.security.algorithm;
@@ -22,7 +23,7 @@ function encrypt(text) {
         return iv.toString('hex') + ':' + encrypted;
     }
     catch (error) {
-        console.error('Encryption error:', error);
+        logger.error({ err: error }, 'Encryption error');
         return null;
     }
 }
@@ -39,7 +40,7 @@ function decrypt(data) {
         return decrypted;
     }
     catch (error) {
-        console.error('Decryption error:', error);
+        logger.error({ err: error }, 'Decryption error');
         return null;
     }
 }
@@ -109,11 +110,13 @@ const UserSchema = new mongoose.Schema({
         type: String,
         unique: true,
         required: true,
+        index: true,
     },
     profileHandle: {
         type: String,
         unique: true,
         sparse: true, // allows null during migration
+        index: true,
     },
     email: {
         type: String,
@@ -167,6 +170,7 @@ const UserSchema = new mongoose.Schema({
     },
     isDeleted: {
         type: Boolean,
+        index: true,
         default: false
     },
     deletedAt: {

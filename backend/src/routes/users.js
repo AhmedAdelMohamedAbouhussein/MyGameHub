@@ -1,4 +1,5 @@
 import express from 'express';
+import { body, validationResult } from 'express-validator';
 import { addUser } from '../controllers/users/create/addAndRestoreUsers.js';
 import { getUserById, getUserIdByEmail, loginUser, getUserFriendList, getUserOwnedGames, getUserOwnedGame, getBatchUsers } from '../controllers/users/record/getUser.js';
 import { softDeletUser, hardDeleteUser } from '../controllers/users/delete/softAndHardDeleteUser.js';
@@ -9,6 +10,24 @@ import requireAuth from '../middleware/requireAuth.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
+
+const validate = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+};
+
+const setInitialPasswordValidation = [
+    body('password')
+        .trim()
+        .notEmpty().withMessage('Password is required')
+        .isLength({ min: 8 }).withMessage('Password must be at least 8 characters long')
+        .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
+        .matches(/[a-z]/).withMessage('Password must contain at least one lowercase letter')
+        .matches(/[0-9]/).withMessage('Password must contain at least one number'),
+];
 
 /**
  * @swagger
@@ -218,7 +237,7 @@ router.post('/adduser', authLimiter, addUser);
  *       500:
  *         description: Server error
  */
-router.post('/batch', getBatchUsers);
+router.post('/batch', requireAuth, getBatchUsers);
 
 /**
  * @swagger
@@ -275,7 +294,7 @@ router.get('/:publicID', getUserById);
  *         description: Server error
  */
 
-router.post('/getuseridbyemail', getUserIdByEmail);
+router.post('/getuseridbyemail', authLimiter, getUserIdByEmail);
 
 /**
  * @swagger
@@ -507,6 +526,6 @@ router.post('/wishlist/toggle', requireAuth, toggleWishlist);
  *     tags: [Users]
  */
 router.get('/wishlist/status/:gameId', requireAuth, checkWishlistStatus);
-router.post('/set-initial-password', requireAuth, setInitialPassword);
+router.post('/set-initial-password', requireAuth, setInitialPasswordValidation, validate, setInitialPassword);
 
 export default router;

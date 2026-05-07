@@ -15,7 +15,7 @@ const queryClient = new QueryClient();
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 createRoot(document.getElementById('root')).render(
-  <BrowserRouter basename="/MyGameHub">
+  <BrowserRouter >
     <QueryClientProvider client={queryClient}>
       <GoogleOAuthProvider clientId={CLIENT_ID}>
         <AuthProvider>

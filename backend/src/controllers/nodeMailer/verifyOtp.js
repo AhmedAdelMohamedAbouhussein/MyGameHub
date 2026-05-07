@@ -128,13 +128,12 @@ export const verifyOtp = async (req, res, next) => {
             // Delete OTP after success
             await OtpSchema.deleteOne({ _id: userOtpVerification._id });
 
-            req.session.destroy((err) => {
+            return req.session.destroy((err) => {
                 if (err) return next(err);
                 res.clearCookie("connect.sid");
-            });
-
-            return res.json({
-                message: "Account permanently deleted successfully",
+                return res.json({
+                    message: "Account permanently deleted successfully",
+                });
             });
         }
         else if (purpose === "deactivate_account") {
@@ -144,16 +143,15 @@ export const verifyOtp = async (req, res, next) => {
             );
 
 
-            req.session.destroy((err) => {
-                if (err) return next(err);
-                res.clearCookie("connect.sid");
-            });
-
             // Delete OTP after success
             await OtpSchema.deleteOne({ _id: userOtpVerification._id });
 
-            return res.json({
-                message: "Account deactivated successfully. It will be permanently deleted after 30 days.",
+            return req.session.destroy((err) => {
+                if (err) return next(err);
+                res.clearCookie("connect.sid");
+                return res.json({
+                    message: "Account deactivated successfully. It will be permanently deleted after 30 days.",
+                });
             });
         }
     }
