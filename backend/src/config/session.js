@@ -13,8 +13,11 @@ const sessionMiddleware = session({
   }),
   cookie: {
     httpOnly: true,
-    secure: config.nodeEnv === "production",
-    sameSite: config.nodeEnv === "production" ? "none" : "lax",
+    //secure: config.nodeEnv === "production",
+    //sameSite: config.nodeEnv === "production" ? "none" : "lax",
+    // Forced to true/none for ngrok/production cross-domain support
+    secure: true,
+    sameSite: "none",
   }
 });
 

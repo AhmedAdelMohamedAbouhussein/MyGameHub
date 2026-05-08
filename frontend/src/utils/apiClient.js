@@ -21,7 +21,10 @@ apiClient.interceptors.request.use(async (config) => {
         if (!csrfToken) {
             try {
                 // Use a separate axios call to avoid interceptor recursion
-                const res = await axios.get(`${BACKEND_BASE}/api/csrf-token`, { withCredentials: true });
+                const res = await axios.get(`${BACKEND_BASE}/api/csrf-token`, { 
+                    withCredentials: true,
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
                 csrfToken = res.data.token;
             } catch (err) {
                 console.error('Failed to fetch CSRF token:', err);
@@ -50,7 +53,10 @@ apiClient.interceptors.response.use(
 
                 // Fetch a new one
                 try {
-                    const res = await axios.get(`${BACKEND_BASE}/api/csrf-token`, { withCredentials: true });
+                    const res = await axios.get(`${BACKEND_BASE}/api/csrf-token`, { 
+                        withCredentials: true,
+                        headers: { 'ngrok-skip-browser-warning': 'true' }
+                    });
                     csrfToken = res.data.token;
                     originalRequest.headers['x-csrf-token'] = csrfToken;
                     return apiClient(originalRequest); // Retry the original request
