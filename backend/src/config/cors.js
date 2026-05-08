@@ -1,7 +1,7 @@
 import config from './env.js';
 
 const allowedOrigins = [
-  "https://55b405d5.mygamehub-bxz.pages.dev/",
+  "https://mygamehub-bxz.pages.dev",
   "http://localhost:5173",
   "http://localhost:3000",
 ];
@@ -18,7 +18,9 @@ const corsOptions = {
     }
     return callback(new Error("Not allowed by CORS"));
   },
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'x-csrf-token'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 };
 
 export default corsOptions;

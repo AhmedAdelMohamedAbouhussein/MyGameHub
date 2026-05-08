@@ -5,6 +5,9 @@ const BACKEND_BASE = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 const apiClient = axios.create({
     baseURL: `${BACKEND_BASE}/api`,
     withCredentials: true,
+    headers: {
+        'ngrok-skip-browser-warning': 'true'
+    }
 });
 
 let csrfToken = null;
