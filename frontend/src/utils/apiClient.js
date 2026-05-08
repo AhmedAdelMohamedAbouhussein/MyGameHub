@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-const BACKEND_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL;
-const BACKEND_BASE = import.meta.env.MODE === "development" ? "" : BACKEND_URL;
+const BACKEND_BASE = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 
 const apiClient = axios.create({
     baseURL: `${BACKEND_BASE}/api`,
@@ -13,7 +12,7 @@ let csrfToken = null;
 // Interceptor to add CSRF token to state-changing requests
 apiClient.interceptors.request.use(async (config) => {
     const isStateChanging = ['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase());
-    
+
     // Don't intercept the csrf-token endpoint itself to prevent infinite loops
     if (isStateChanging && !config.url?.includes('/csrf-token')) {
         if (!csrfToken) {
@@ -39,13 +38,13 @@ apiClient.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
-        
+
         // If the error is a CSRF error (often 403), clear token and retry once
         if (error.response?.status === 403 && error.response?.data?.message?.toLowerCase().includes('csrf')) {
             if (!originalRequest._retry) {
                 originalRequest._retry = true;
                 csrfToken = null; // Clear invalid token
-                
+
                 // Fetch a new one
                 try {
                     const res = await axios.get(`${BACKEND_BASE}/api/csrf-token`, { withCredentials: true });

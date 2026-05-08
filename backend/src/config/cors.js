@@ -1,7 +1,7 @@
 import config from './env.js';
 
 const allowedOrigins = [
-  "https://mygamehub-bxz.pages.dev",
+  "https://55b405d5.mygamehub-bxz.pages.dev/",
   "http://localhost:5173",
   "http://localhost:3000",
 ];
