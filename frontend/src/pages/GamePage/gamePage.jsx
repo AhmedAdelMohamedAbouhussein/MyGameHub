@@ -467,12 +467,21 @@ const GamePage = () => {
                     </div>
 
                     {/* Attribution */}
-                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[8px] sm:text-[9px] font-black text-text-muted uppercase tracking-[0.3em] pt-8 sm:pt-12 border-t border-white/5 opacity-40 text-center">
-                        <span>Data: IsThereAnyDeal</span>
-                        <div className="hidden sm:block w-1 h-1 rounded-full bg-white/20" />
-                        <span>Visuals: RAWG.IO</span>
-                        <div className="hidden sm:block w-1 h-1 rounded-full bg-white/20" />
-                        <span>GameHub © 2024</span>
+                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-[10px] sm:text-[11px] font-black text-text-muted uppercase tracking-[0.2em] pt-12 border-t border-white/5 text-center">
+                        <div className="flex items-center gap-3">
+                            <span className="text-white/20">Data via</span>
+                            <a href="https://isthereanydeal.com" target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-accent transition-colors">IsThereAnyDeal</a>
+                        </div>
+                        <div className="hidden sm:block w-1 h-1 rounded-full bg-white/10" />
+                        <div className="flex items-center gap-3">
+                            <span className="text-white/20">Media via</span>
+                            <a href="https://rawg.io" target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-accent transition-colors">RAWG.IO</a>
+                        </div>
+                        <div className="hidden sm:block w-1 h-1 rounded-full bg-white/10" />
+                        <div className="flex items-center gap-3">
+                            <span className="text-white/20">Built by</span>
+                            <span className="text-white">Ahmed Adel</span>
+                        </div>
                     </div>
 
                 </div>

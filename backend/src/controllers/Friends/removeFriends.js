@@ -1,4 +1,5 @@
 import userModel from '../../models/User.js'
+import Friendship from '../../models/Friendship.js';
 
 export const removeFriends = async (req, res, next) => {
   const friendPublicID = decodeURIComponent(req.params.friendId); // param now refers to friend's publicID
@@ -18,22 +19,18 @@ export const removeFriends = async (req, res, next) => {
 
     const publicID = user.publicID;
 
-    // Remove friend from current user
-    const userUpdate = await userModel.updateOne(
-      { publicID },
-      { $pull: { "friends.User": { user: friendPublicID } } }
-    );
+    // Delete friendships for both users
+    const result = await Friendship.deleteMany({
+        $or: [
+            { userId: user._id, friendUserPublicID: friendPublicID, source: "User" },
+            { userId: friend._id, friendUserPublicID: publicID, source: "User" }
+        ]
+    });
 
-    // Remove current user from friend
-    const friendUpdate = await userModel.updateOne(
-      { publicID: friendPublicID },
-      { $pull: { "friends.User": { user: publicID } } }
-    );
-
-    if (!userUpdate.modifiedCount && !friendUpdate.modifiedCount) {
-      const error = new Error("Friendship not found");
-      error.status = 400;
-      return next(error);
+    if (result.deletedCount === 0) {
+        const error = new Error("Friendship not found");
+        error.status = 400;
+        return next(error);
     }
 
     res.status(200).json({ message: "Friend removed successfully" });

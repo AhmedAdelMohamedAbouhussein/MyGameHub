@@ -1,4 +1,5 @@
 import userModel from '../../models/User.js'
+import Friendship from '../../models/Friendship.js';
 
 export const rejectFriends = async (req, res, next) => {
   const friendPublicID = decodeURIComponent(req.params.friendId); // param now refers to friend's publicID
@@ -18,22 +19,18 @@ export const rejectFriends = async (req, res, next) => {
 
     const publicID = user.publicID;
 
-    // Remove pending request from current user
-    const userUpdate = await userModel.updateOne(
-      { publicID },
-      { $pull: { "friends.User": { user: friendPublicID, status: "pending" } } }
-    );
+    // Delete pending friendships for both users
+    const result = await Friendship.deleteMany({
+        $or: [
+            { userId: user._id, friendUserPublicID: friendPublicID, source: "User", status: "pending" },
+            { userId: friend._id, friendUserPublicID: publicID, source: "User", status: "pending" }
+        ]
+    });
 
-    // Remove pending request from friend
-    const friendUpdate = await userModel.updateOne(
-      { publicID: friendPublicID },
-      { $pull: { "friends.User": { user: publicID, status: "pending" } } }
-    );
-
-    if (!userUpdate.modifiedCount && !friendUpdate.modifiedCount) {
-      const error = new Error("No pending request found");
-      error.status = 400;
-      return next(error);
+    if (result.deletedCount === 0) {
+        const error = new Error("No pending request found");
+        error.status = 400;
+        return next(error);
     }
 
     res.status(200).json({ message: "Friend request rejected" });

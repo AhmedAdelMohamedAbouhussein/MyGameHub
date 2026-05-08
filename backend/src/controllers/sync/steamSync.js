@@ -3,6 +3,8 @@ import passport from "passport";
 import SteamStrategy from "passport-steam";
 import config from '../../config/env.js'
 import userModel from "../../models/User.js";
+import UserGame from "../../models/UserGame.js";
+import Friendship from "../../models/Friendship.js";
 import logger from "../../utils/logger.js";
 
 import { getOwnedGames, getUserAchievements, getUserFriendList } from '../allSteamInfo.js'
@@ -134,87 +136,126 @@ export const steamReturn = (req, res, next) => {
             linkedAccounts.set("Steam", steamAccounts);
             dbUser.linkedAccounts = linkedAccounts;
 
-            // 2. Fetch Games
-            const noAchGames = await getOwnedGames(steamId);
+            // 1. Parallelize API calls for maximum speed
+            const [noAchGames, friendsList] = await Promise.all([
+                getOwnedGames(steamId),
+                getUserFriendList(steamId, existingAcc?.friends || [])
+            ]);
+            
             const games = await getUserAchievements(steamId, noAchGames);
 
-            // 3. Update Owned Games (Additive/Unified)
-            if (!dbUser.ownedGames) dbUser.ownedGames = new Map();
-            let steamGamesMap = dbUser.ownedGames.get("Steam") || new Map();
+            // 2. Fetch all existing games for this user/platform once
+            const existingGames = await UserGame.find({ userId, platform: "Steam" });
+            const existingGamesMap = new Map(existingGames.map(g => [g.gameId, g]));
 
+            // 3. Process Games in memory
+            const gameBulkOps = [];
             for (const game of games) {
                 if (!game || !game.gameId) continue;
-
                 const gameId = String(game.gameId);
-
-                let existingGame = steamGamesMap.get(gameId);
+                
                 const ownerRecord = {
                     accountId: steamId,
                     accountName: displayName,
                     hoursPlayed: game.hoursPlayed,
                     lastPlayed: game.lastPlayed,
                     progress: game.progress || 0,
+                    currentGamerscore: 0,
+                    maxGamerscore: 0,
                     achievements: game.achievements || []
                 };
 
+                const existingGame = existingGamesMap.get(gameId);
+                let updatedOwners = [];
+                
                 if (existingGame) {
-                    // Update or add owner record
-                    const existingOwnerIndex = existingGame.owners.findIndex(o => o.accountId === steamId);
-                    if (existingOwnerIndex > -1) {
-                        existingGame.owners[existingOwnerIndex] = ownerRecord;
+                    const ownerIndex = existingGame.owners.findIndex(o => o.accountId === steamId);
+                    updatedOwners = [...existingGame.owners];
+                    if (ownerIndex > -1) {
+                        updatedOwners[ownerIndex] = ownerRecord;
                     } else {
-                        existingGame.owners.push(ownerRecord);
+                        updatedOwners.push(ownerRecord);
                     }
-
-                    // Recalculate summary stats
-                    existingGame.maxProgress = Math.max(...existingGame.owners.map(o => o.progress || 0));
-                    // simple total for hours (could be more complex if overlapping)
-                    // existingGame.totalHours = ...
                 } else {
-                    // New unified game record
-                    steamGamesMap.set(gameId, {
-                        gameName: game.gameName,
-                        gameId: gameId,
-                        platform: game.platform,
-                        coverImage: game.coverImage,
-                        owners: [ownerRecord],
-                        maxProgress: ownerRecord.progress,
-                        totalHours: ownerRecord.hoursPlayed
+                    updatedOwners = [ownerRecord];
+                }
+
+                gameBulkOps.push({
+                    updateOne: {
+                        filter: { userId, platform: "Steam", gameId },
+                        update: {
+                            $set: {
+                                gameName: game.gameName,
+                                coverImage: game.coverImage,
+                                totalHours: ownerRecord.hoursPlayed,
+                                owners: updatedOwners,
+                                maxProgress: Math.max(...updatedOwners.map(o => o.progress || 0))
+                            },
+                            $setOnInsert: { userId, platform: "Steam", gameId }
+                        },
+                        upsert: true
+                    }
+                });
+            }
+
+            if (gameBulkOps.length > 0) {
+                await UserGame.bulkWrite(gameBulkOps, { ordered: false });
+            }
+
+            // 4. Process Friends with Diff-based Sync
+            const existingFriends = await Friendship.find({ userId, source: "Steam", linkedAccountId: steamId });
+            const existingFriendsMap = new Map(existingFriends.map(f => [f.externalId, f]));
+            
+            const friendBulkOps = [];
+            const newFriendExternalIds = new Set();
+
+            for (const f of friendsList) {
+                newFriendExternalIds.add(f.externalId);
+                const existing = existingFriendsMap.get(f.externalId);
+                
+                const friendDoc = {
+                    userId,
+                    friendUserPublicID: existing?.friendUserPublicID || null,
+                    externalId: f.externalId,
+                    linkedAccountId: steamId,
+                    displayName: f.displayName,
+                    profileUrl: f.profileUrl,
+                    friendsSince: f.friendsSince,
+                    avatar: f.avatar,
+                    originalAvatarUrl: f.originalAvatarUrl,
+                    status: "accepted",
+                    source: "Steam",
+                    requestedByMe: false
+                };
+
+                // Only update if something changed (Basic diffing)
+                if (!existing || existing.displayName !== f.displayName || existing.avatar !== f.avatar) {
+                    friendBulkOps.push({
+                        updateOne: {
+                            filter: { userId, source: "Steam", externalId: f.externalId, linkedAccountId: steamId },
+                            update: { $set: friendDoc },
+                            upsert: true
+                        }
                     });
                 }
             }
-            dbUser.ownedGames.set("Steam", steamGamesMap);
 
-            // 4. Update Friends
-            const friendsList = await getUserFriendList(steamId, dbUser.friends?.get("Steam") || []);
-            if (!dbUser.friends) dbUser.friends = new Map();
+            // Remove friends that are no longer in the list
+            const friendsToDelete = existingFriends
+                .filter(f => !newFriendExternalIds.has(f.externalId))
+                .map(f => f._id);
+            
+            if (friendsToDelete.length > 0) {
+                friendBulkOps.push({
+                    deleteMany: { filter: { _id: { $in: friendsToDelete } } }
+                });
+            }
 
-            // Filter out existing friends from THIS account to replace them with fresh data
-            let currentSteamFriends = dbUser.friends.get("Steam") || [];
-            currentSteamFriends = currentSteamFriends.filter(f => f.linkedAccountId !== steamId);
+            if (friendBulkOps.length > 0) {
+                await Friendship.bulkWrite(friendBulkOps, { ordered: false });
+            }
 
-            const newFriends = friendsList.map(f => ({
-                user: null,
-                externalId: f.externalId,
-                linkedAccountId: steamId,
-                displayName: f.displayName,
-                profileUrl: f.profileUrl,
-                friendsSince: f.friendsSince,
-                avatar: f.avatar,
-                originalAvatarUrl: f.originalAvatarUrl,
-                status: "accepted",
-                source: "Steam"
-            }));
-
-            // Deduplicate across all Steam accounts for this user
-            const friendsMap = new Map();
-            [...currentSteamFriends, ...newFriends].forEach(f => {
-                friendsMap.set(f.externalId, f);
-            });
-
-            dbUser.friends.set("Steam", Array.from(friendsMap.values()));
-
-            // Save everything
+            // 5. Final Save
             await dbUser.save();
 
             res.redirect(`${APP_FRONTEND_URL}/library`)

@@ -1,4 +1,6 @@
 import userModel from "../../../models/User.js";
+import UserGame from "../../../models/UserGame.js";
+import Friendship from "../../../models/Friendship.js";
 import config from '../../../config/env.js';
 import logger from '../../../utils/logger.js';
 import { hashId } from '../../../utils/logSanitize.js';
@@ -144,21 +146,36 @@ export const loginUser = async (req, res, next) => {
 // @route  POST /api/users/ownedgames
 export const getUserOwnedGames = async (req, res, next) => {
   try {
-
-    const userId = req.session.userId; // ✅ correct now
-
-    const user = await userModel.findById(userId).select("ownedGames");
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const mongoose = (await import('mongoose')).default;
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
     }
 
-    // Convert Maps to plain objects
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Fetch all games for this user (using lean for performance)
+    const games = await UserGame.find({ userId: userObjectId }).lean();
+
+    // Group by platform to maintain the original API response structure
     const ownedGames = {};
-    if (user.ownedGames) {
-      for (const [platform, gamesMap] of user.ownedGames.entries()) {
-        ownedGames[platform] = Object.fromEntries(gamesMap);
+    for (const gameObj of games) {
+      if (!ownedGames[gameObj.platform]) {
+        ownedGames[gameObj.platform] = {};
       }
+      // Ensure owners is always an array
+      if (!gameObj.owners) gameObj.owners = [];
+      
+      // Surface primary stats for the frontend library view
+      if (gameObj.owners.length > 0) {
+        gameObj.progress = gameObj.maxProgress || gameObj.owners[0].progress || 0;
+        gameObj.achievements = gameObj.owners[0].achievements || [];
+      } else {
+        gameObj.progress = 0;
+        gameObj.achievements = [];
+      }
+
+      ownedGames[gameObj.platform][gameObj.gameId] = gameObj;
     }
 
     res.status(200).json({ ownedGames });
@@ -175,78 +192,83 @@ export const getUserOwnedGame = async (req, res, next) => {
     const userId = req.session.userId;
     const { platform, id } = req.params;
 
-    const user = await userModel.findById(userId).select("ownedGames");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    // Find the specific game across all platforms (case-insensitive platform check)
+    const targetGame = await UserGame.findOne({ 
+      userId, 
+      platform: { $regex: new RegExp(`^${platform}$`, 'i') }, 
+      gameId: id 
+    });
 
-    if (!user.ownedGames) {
-      return res.status(404).json({ message: "No owned games found" });
-    }
-
-    // Convert everything to plain objects for safe lookup
-    const ownedGamesObj = {};
-    for (const [plt, gamesMap] of user.ownedGames.entries()) {
-      ownedGamesObj[plt] = Object.fromEntries(gamesMap);
-    }
-
-    // Case-insensitive platform lookup
-    const platformKey = Object.keys(ownedGamesObj).find(
-      k => k.toLowerCase() === platform.toLowerCase()
-    );
-
-    const platformGames = platformKey ? ownedGamesObj[platformKey] : null;
-    if (!platformGames) {
-      return res.status(404).json({ message: `No games found for platform ${platform}` });
-    }
-
-    const targetGame = platformGames[id];
     if (!targetGame) {
-      return res.status(404).json({ message: `Game with id ${id} not found on ${platform}` });
+      // Fallback: try finding by gameId and userId alone if platform mismatch
+      const fallbackGame = await UserGame.findOne({ userId, gameId: id });
+      if (!fallbackGame) {
+        return res.status(404).json({ message: `Game with id ${id} not found.` });
+      }
+      return res.status(301).json({ 
+        message: "Platform mismatch, redirecting...", 
+        redirectPlatform: fallbackGame.platform 
+      });
     }
 
-    // --- NEW: Dynamic Avatar & Platform Aggregation ---
     const targetName = targetGame.gameName?.toLowerCase().trim();
+    const escapedName = targetName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Fetch all versions of this game (across platforms) to merge owner data
+    const allVersions = await UserGame.find({ 
+      userId, 
+      gameName: { $regex: new RegExp(`^${escapedName}$`, 'i') } 
+    });
+
     const mergedOwners = [];
 
-    // Fetch linkedAccounts to get fresh avatars without storing them redundant in every game
+    // Fetch linkedAccounts for fresh avatars
     const accountUser = await userModel.findById(userId).select("linkedAccounts");
     const linkedAccountsObj = {};
-    if (accountUser.linkedAccounts) {
+    if (accountUser && accountUser.linkedAccounts) {
       for (const [plt, accList] of accountUser.linkedAccounts.entries()) {
         linkedAccountsObj[plt] = accList;
       }
     }
 
-    // Search through all platforms for games with the same name
-    for (const [plt, pltGames] of Object.entries(ownedGamesObj)) {
-      for (const gameRecord of Object.values(pltGames)) {
-        if (gameRecord.gameName?.toLowerCase().trim() === targetName) {
-          const processedOwners = gameRecord.owners.map(owner => {
-            const ownerObj = owner.toObject ? owner.toObject() : owner;
+    for (const gameRecord of allVersions) {
+      const processedOwners = gameRecord.owners.map(owner => {
+        const ownerObj = owner.toObject ? owner.toObject() : owner;
+        const platformAccounts = linkedAccountsObj[gameRecord.platform] || [];
+        const linkedAcc = platformAccounts.find(acc => acc.accountId === ownerObj.accountId);
 
-            // Find matching linked account for this platform/ID to get the avatar
-            const platformAccounts = linkedAccountsObj[plt] || [];
-            const linkedAcc = platformAccounts.find(acc => acc.accountId === ownerObj.accountId);
-
-            return {
-              ...ownerObj,
-              platform: plt,
-              avatar: linkedAcc?.avatar || null // Pass fresh avatar dynamically
-            };
-          });
-          mergedOwners.push(...processedOwners);
-        }
-      }
+        return {
+          ...ownerObj,
+          platform: gameRecord.platform,
+          avatar: linkedAcc?.avatar || null
+        };
+      });
+      mergedOwners.push(...processedOwners);
     }
 
-    // Remove duplicates
+    // Deduplicate owners
     const uniqueOwners = Array.from(new Map(mergedOwners.map(o => [`${o.platform}-${o.accountId}`, o])).values());
 
     const mergedGame = {
-      ...targetGame.toObject ? targetGame.toObject() : targetGame,
+      ...targetGame.toObject(),
       owners: uniqueOwners
     };
+
+    // Surface achievements and gamerscore for the primary platform requested (if available)
+    const primaryOwner = uniqueOwners.find(o => o.platform === platform && o.accountId === id) || uniqueOwners[0];
+    if (primaryOwner) {
+      mergedGame.achievements = primaryOwner.achievements || [];
+      mergedGame.progress = primaryOwner.progress || 0;
+      mergedGame.currentGamerscore = primaryOwner.currentGamerscore || 0;
+      mergedGame.maxGamerscore = primaryOwner.maxGamerscore || 0;
+    }
+
+    // Safety check: ensure achievements exist at top level if there is only one owner (common case)
+    if (uniqueOwners.length === 1 && !mergedGame.achievements) {
+        mergedGame.achievements = uniqueOwners[0].achievements;
+        mergedGame.currentGamerscore = uniqueOwners[0].currentGamerscore;
+        mergedGame.maxGamerscore = uniqueOwners[0].maxGamerscore;
+    }
 
     res.status(200).json({ game: mergedGame });
   } catch (err) {
@@ -267,9 +289,7 @@ export const getUserFriendList = async (req, res, next) => {
       return res.status(400).json({ message: "publicID is required and must be a string" });
     }
 
-    // Find user by publicID
-    const user = await userModel.findOne({ publicID }).select("friends");
-
+    const user = await userModel.findOne({ publicID });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -277,22 +297,29 @@ export const getUserFriendList = async (req, res, next) => {
     // Determine if the requester is the owner of the profile
     const isOwner = req.session.userId && user._id.toString() === req.session.userId;
 
-    // Convert Map -> plain object, and scrub sensitive IDs if not owner
+    // Fetch friends from normalized collection
+    const friendDocs = await Friendship.find({ userId: user._id });
+
+    // Group and scrub
     const friends = {};
-    if (user.friends) {
-      for (const [platform, friendArray] of user.friends.entries()) {
-        if (platform !== "User" && !isOwner) {
-          // Scrub externalId and linkedAccountId for public viewing
-          friends[platform] = friendArray.map(f => {
-            const clean = f.toObject ? f.toObject() : { ...f };
-            delete clean.externalId;
-            delete clean.linkedAccountId;
-            return clean;
-          });
-        } else {
-          friends[platform] = friendArray; // friendArray is already plain objects
-        }
+    for (const f of friendDocs) {
+      if (!friends[f.source]) {
+        friends[f.source] = [];
       }
+
+      const friendData = f.toObject();
+      // Aliases for frontend compatibility
+      friendData.user = f.friendUserPublicID;
+      friendData.publicID = f.friendUserPublicID;
+      friendData.name = f.displayName;
+      
+      // Scrub sensitive IDs for non-owners on non-native platforms
+      if (f.source !== "User" && !isOwner) {
+        delete friendData.externalId;
+        delete friendData.linkedAccountId;
+      }
+      
+      friends[f.source].push(friendData);
     }
 
     res.status(200).json({ friends });

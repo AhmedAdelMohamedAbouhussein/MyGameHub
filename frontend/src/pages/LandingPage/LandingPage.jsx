@@ -308,6 +308,41 @@ function LandingPage() {
           </div>
         </section>
 
+        {/* TRAILER SECTION - SEE IT IN ACTION */}
+        <section className="relative py-24 sm:py-32 overflow-hidden">
+          {/* Ambient Glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-96 bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div className="flex flex-col items-center text-center mb-16 space-y-4">
+              <h2 className="text-[10px] font-black tracking-[0.4em] text-accent uppercase">Production Showcase</h2>
+              <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white uppercase slant-1 tracking-tighter">Experience the Future</h3>
+              <div className="w-24 h-1.5 bg-accent rounded-full" />
+            </div>
+
+            <div className="relative group max-w-5xl mx-auto">
+              {/* Decorative Frame Glow */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-accent/50 to-blue-500/50 rounded-[2rem] sm:rounded-[3rem] blur-sm opacity-20 group-hover:opacity-40 transition-opacity duration-700" />
+              
+              {/* Video Container */}
+              <div className="relative aspect-video rounded-[2rem] sm:rounded-[3rem] overflow-hidden border border-white/10 bg-midnight-950 shadow-[0_0_50px_-12px_rgba(0,0,0,0.8)]">
+                <iframe
+                  className="w-full h-full"
+                  src="https://www.youtube.com/embed/mpcSkedvgfk?rel=0&modestbranding=1&autoplay=0"
+                  title="GameHub Official Trailer"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+
+              {/* Decorative Accents */}
+              <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-accent/20 rounded-full blur-2xl" />
+              <div className="absolute -top-6 -right-6 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl" />
+            </div>
+          </div>
+        </section>
+
       </main>
 
       <Footer />

@@ -1,4 +1,6 @@
 import userModel from "../../../models/User.js";
+import UserGame from "../../../models/UserGame.js";
+import Friendship from "../../../models/Friendship.js";
 
 /**
  * @desc    Get a user's public profile and stats
@@ -16,10 +18,14 @@ export const getPublicProfile = async (req, res, next) => {
             currentUserPublicID = currentUser?.publicID;
         }
 
-        // Try profileHandle first, then fall back to publicID (legacy URLs)
-        let targetUser = await userModel.findOne({ profileHandle: param });
+        // Try profileHandle first (case-insensitive), then fall back to publicID (case-insensitive)
+        let targetUser = await userModel.findOne({ 
+            profileHandle: { $regex: new RegExp(`^${param}$`, 'i') } 
+        });
         if (!targetUser) {
-            targetUser = await userModel.findOne({ publicID: param });
+            targetUser = await userModel.findOne({ 
+                publicID: { $regex: new RegExp(`^${param}$`, 'i') } 
+            });
         }
 
         if (!targetUser || targetUser.isDeleted) {
@@ -48,16 +54,19 @@ export const getPublicProfile = async (req, res, next) => {
             friendshipStatus: "none" // none, pending, accepted, requested_by_target
         };
 
-        // Calculate Friend Count
-        if (targetUser.friends) {
-            for (const [platform, friendsList] of targetUser.friends.entries()) {
-                profile.friendsCount += friendsList.filter(f => f.status === "accepted").length;
-            }
-        }
+        // Calculate Friend Count (Normalized)
+        profile.friendsCount = await Friendship.countDocuments({ 
+            userId: targetUser._id, 
+            status: "accepted" 
+        });
 
         // Check Relationship Status with viewer
-        if (currentUserPublicID && targetUser.friends?.get("User")) {
-            const relationship = targetUser.friends.get("User").find(f => f.user === currentUserPublicID);
+        if (currentUserPublicID) {
+            const relationship = await Friendship.findOne({
+                userId: targetUser._id,
+                source: "User",
+                friendUserPublicID: currentUserPublicID
+            });
             if (relationship) {
                 if (relationship.status === "accepted") {
                     profile.friendshipStatus = "accepted";
@@ -74,34 +83,31 @@ export const getPublicProfile = async (req, res, next) => {
 
         if (canSeeStats) {
             const unifiedGames = new Map();
+            const ownedGames = await UserGame.find({ userId: targetUser._id });
 
-            if (targetUser.ownedGames) {
-                for (const [platform, gamesMap] of targetUser.ownedGames.entries()) {
-                    for (const [gameId, game] of gamesMap.entries()) {
-                        const gameName = game.gameName || game.title || "Unknown Game";
-                        const key = gameName.toLowerCase().trim();
+            for (const game of ownedGames) {
+                const gameName = game.gameName || "Unknown Game";
+                const key = gameName.toLowerCase().trim();
 
-                        // Parse hours from "Xh Ym Zs"
-                        let hoursNum = 0;
-                        if (game.totalHours) {
-                            const match = game.totalHours.match(/(\d+)h/);
-                            if (match) hoursNum = parseInt(match[1]);
-                        }
+                // Parse hours from "Xh Ym Zs"
+                let hoursNum = 0;
+                if (game.totalHours) {
+                    const match = game.totalHours.match(/(\d+)h/);
+                    if (match) hoursNum = parseInt(match[1]);
+                }
 
-                        if (unifiedGames.has(key)) {
-                            const existing = unifiedGames.get(key);
-                            existing.hoursPlayed += hoursNum;
-                            existing.progress = Math.max(existing.progress, game.maxProgress || 0);
-                        } else {
-                            unifiedGames.set(key, {
-                                gameName: gameName,
-                                coverImage: game.coverImage,
-                                platform: platform,
-                                hoursPlayed: hoursNum,
-                                progress: game.maxProgress || 0
-                            });
-                        }
-                    }
+                if (unifiedGames.has(key)) {
+                    const existing = unifiedGames.get(key);
+                    existing.hoursPlayed += hoursNum;
+                    existing.progress = Math.max(existing.progress, game.maxProgress || 0);
+                } else {
+                    unifiedGames.set(key, {
+                        gameName: gameName,
+                        coverImage: game.coverImage,
+                        platform: game.platform,
+                        hoursPlayed: hoursNum,
+                        progress: game.maxProgress || 0
+                    });
                 }
             }
 
@@ -219,21 +225,23 @@ export const getCommunityUsers = async (req, res, next) => {
         // Sort manually by likes array length descending
         const sorted = users.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
 
-        const formatted = sorted.map(u => {
-            let totalGames = 0;
-            if (u.ownedGames) {
-                for (const platform in u.ownedGames) {
-                    totalGames += Object.keys(u.ownedGames[platform]).length;
-                }
-            }
+        // Batch fetch total games count for all users to avoid N+1 queries
+        const userIds = sorted.map(u => u._id);
+        const gamesCounts = await UserGame.aggregate([
+            { $match: { userId: { $in: userIds } } },
+            { $group: { _id: "$userId", count: { $sum: 1 } } }
+        ]);
 
+        const countsMap = new Map(gamesCounts.map(g => [g._id.toString(), g.count]));
+
+        const formatted = sorted.map(u => {
             const entry = {
                 profileHandle: u.profileHandle,
                 name: u.name,
                 profilePicture: u.profilePicture,
                 likesCount: u.likes?.length || 0,
                 bio: u.bio,
-                totalGames,
+                totalGames: countsMap.get(u._id.toString()) || 0,
                 allowPublicFriendRequests: u.allowPublicFriendRequests !== false
             };
 

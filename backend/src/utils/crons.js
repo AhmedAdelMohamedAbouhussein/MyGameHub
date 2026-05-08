@@ -1,12 +1,13 @@
 import cron from 'node-cron';
 import nodemailer from 'nodemailer';
 import User from '../models/User.js';
+import WishlistItem from '../models/WishlistItem.js';
 import axios from 'axios';
 import config from '../config/env.js';
 import Notification from '../models/Notification.js';
 import logger from './logger.js';
 import { maskEmail, hashId } from './logSanitize.js';
-import { generatePriceDropEmail, generateAccountPurgedEmail, generateAdminReportEmail, generateTokenExpiredEmail } from './emailTemplates.js';
+import { generatePriceDropEmail, generateConsolidatedPriceDropEmail, generateAccountPurgedEmail, generateAdminReportEmail, generateTokenExpiredEmail } from './emailTemplates.js';
 import { exchangeRefreshTokenForAuthTokens } from 'psn-api';
 import { isOAuthAuthFailure, needsRenewal } from './oauthHelpers.js';
 
@@ -83,19 +84,17 @@ export const startWishlistCron = () => {
         }
 
         try {
-            // 1. Get all users with non-empty wishlists
-            const users = await User.find({ 'wishlist.0': { $exists: true } });
-
-            // 2. Collect all unique ITAD IDs
+            // 1. Get all unique ITAD IDs from all wishlist items
+            const allWishlistItems = await WishlistItem.find({});
             const allItadIds = new Set();
-            users.forEach(u => u.wishlist.forEach(item => {
+            allWishlistItems.forEach(item => {
                 if (item.itadId) allItadIds.add(item.itadId);
-            }));
+            });
 
             const itadIdArray = Array.from(allItadIds);
             const priceMap = {};
 
-            // 3. Batch fetch prices in chunks of 50
+            // 2. Batch fetch prices in chunks of 50
             const chunkSize = 50;
             for (let i = 0; i < itadIdArray.length; i += chunkSize) {
                 const chunk = itadIdArray.slice(i, i + chunkSize);
@@ -111,19 +110,29 @@ export const startWishlistCron = () => {
                 }
             }
 
-            // 4. Process each user and their wishlist
-            for (const user of users) {
-                let userUpdated = false;
+            // 3. Process items by user to send notifications
+            const userItemMap = {};
+            for (const item of allWishlistItems) {
+                const uId = item.userId.toString();
+                if (!userItemMap[uId]) userItemMap[uId] = [];
+                userItemMap[uId].push(item);
+            }
 
-                for (const item of user.wishlist) {
+            for (const [userId, items] of Object.entries(userItemMap)) {
+                const user = await User.findById(userId);
+                if (!user || user.isDeleted) continue;
+
+                const userPriceDrops = [];
+
+                for (const item of items) {
                     if (!item.itadId || !priceMap[item.itadId]) continue;
 
                     const currentDeals = priceMap[item.itadId];
                     const storePriceDrops = [];
+                    let itemUpdated = false;
 
-                    // Check each tracked store for this game (only stores in targetStores)
+                    // Check each tracked store
                     item.storePrices.forEach(storeTracking => {
-                        // Skip if this store isn't in the user's tracked stores list
                         if (item.targetStores?.length > 0 && !item.targetStores.includes(storeTracking.storeName)) return;
 
                         const deal = currentDeals.find(d => d.shop?.name === storeTracking.storeName);
@@ -139,41 +148,55 @@ export const startWishlistCron = () => {
                                 newPrice: currentPrice
                             });
                             storeTracking.lastNotifiedPrice = currentPrice;
-                            userUpdated = true;
+                            itemUpdated = true;
                         }
                     });
 
-                    // If any stores dropped in price — notify in-app AND send email
+                    if (itemUpdated) {
+                        await item.save();
+                    }
+
+                    // If any stores dropped in price — accumulate for summary
                     if (storePriceDrops.length > 0) {
-                        const dropDetails = storePriceDrops.map(d => `${d.storeName} ($${d.newPrice}, was $${d.oldPrice})`).join(", ");
-
-                        // In-app notification
-                        await Notification.create({
-                            recipient: user._id,
-                            sender: 'system',
-                            message: `Price drop alert for ${item.gameName}! Now cheaper on: ${dropDetails}`,
-                            link: `/games/${item.gameId}`,
-                            type: 'deal_alert'
+                        userPriceDrops.push({
+                            gameName: item.gameName,
+                            gameId: item.gameId,
+                            drops: storePriceDrops
                         });
-
-                        // Email notification
-                        try {
-                            await transporter.sendMail({
-                                from: `"GameHub Deals" <${config.gmail.gmail}>`,
-                                to: user.email,
-                                subject: `💸 Price Drop: ${item.gameName} is cheaper now!`,
-                                html: generatePriceDropEmail(user.name, item.gameName, item.gameId, storePriceDrops)
-                            });
-                        } catch (mailErr) {
-                            logger.error({ err: mailErr, email: maskEmail(user.email) }, '[Cron] Failed to send price-drop email');
-                        }
-
-                        logger.debug({ email: maskEmail(user.email), game: item.gameName }, '[Cron] Price drop notification sent');
                     }
                 }
 
-                if (userUpdated) {
-                    await user.save();
+                // If user has ANY price drops — send ONE notification and ONE email
+                if (userPriceDrops.length > 0) {
+                    const totalGames = userPriceDrops.length;
+                    
+                    // 1. Consolidated In-app notification
+                    const message = totalGames === 1 
+                        ? `Price drop alert for ${userPriceDrops[0].gameName}!` 
+                        : `Good news! ${totalGames} games on your wishlist dropped in price.`;
+
+                    await Notification.create({
+                        recipient: user._id,
+                        sender: 'system',
+                        message,
+                        link: totalGames === 1 ? `/games/${userPriceDrops[0].gameId}` : '/library/wishlist',
+                        type: 'deal_alert'
+                    });
+
+                    // 2. Consolidated Email notification
+                    try {
+                        await transporter.sendMail({
+                            from: `"GameHub Deals" <${config.gmail.gmail}>`,
+                            to: user.email,
+                            subject: totalGames === 1 
+                                ? `💸 Price Drop: ${userPriceDrops[0].gameName} is cheaper now!` 
+                                : `🔥 Deal Alert: ${totalGames} games on your wishlist are on sale!`,
+                            html: generateConsolidatedPriceDropEmail(user.name, userPriceDrops)
+                        });
+                        logger.debug({ email: maskEmail(user.email), count: totalGames }, '[Cron] Consolidated price drop email sent');
+                    } catch (mailErr) {
+                        logger.error({ err: mailErr, email: maskEmail(user.email) }, '[Cron] Failed to send consolidated price-drop email');
+                    }
                 }
             }
             logger.info({ cron: 'wishlist' }, '[Cron] Daily wishlist price check completed.');

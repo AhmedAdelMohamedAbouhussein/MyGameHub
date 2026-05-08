@@ -1,4 +1,5 @@
 import User from '../../../models/User.js';
+import WishlistItem from '../../../models/WishlistItem.js';
 import axios from 'axios';
 import config from '../../../config/env.js';
 import redisClient from '../../../config/redis.js';
@@ -79,17 +80,12 @@ export const toggleWishlist = async (req, res, next) => {
     if (!gameId) return res.status(400).json({ message: "Game ID is required" });
 
     try {
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: "User not found" });
-
         const gameIdStr = String(gameId);
-        const index = user.wishlist.findIndex(item => item.gameId === gameIdStr);
-
+        
         // Explicit Remove
-        if (action === "remove" || (index > -1 && !action && !targetStores)) {
-            if (index > -1) {
-                user.wishlist.splice(index, 1);
-                await user.save();
+        if (action === "remove") {
+            const result = await WishlistItem.deleteOne({ userId, gameId: gameIdStr });
+            if (result.deletedCount > 0) {
                 return res.status(200).json({ message: "Removed from wishlist", inWishlist: false });
             }
             return res.status(404).json({ message: "Game not in wishlist" });
@@ -109,35 +105,26 @@ export const toggleWishlist = async (req, res, next) => {
             };
         });
 
-        if (index > -1) {
-            // Update existing
-            user.wishlist[index].targetStores = targetStores || [];
-            user.wishlist[index].storePrices = storePrices;
-            if (effectiveItadId) user.wishlist[index].itadId = effectiveItadId;
+        const updateData = {
+            gameName: gameName,
+            targetStores: targetStores || [],
+            storePrices: storePrices
+        };
+        if (effectiveItadId) updateData.itadId = effectiveItadId;
 
-            await user.save();
-            return res.status(200).json({
-                message: "Wishlist preferences updated",
-                inWishlist: true,
-                itadId: effectiveItadId
-            });
-        } else {
-            // Add new
-            user.wishlist.push({
-                gameId: gameIdStr,
-                itadId: effectiveItadId,
-                gameName: gameName,
-                targetStores: targetStores || [],
-                storePrices: storePrices
-            });
+        const updatedItem = await WishlistItem.findOneAndUpdate(
+            { userId, gameId: gameIdStr },
+            { $set: updateData },
+            { upsert: true, new: true }
+        );
 
-            await user.save();
-            return res.status(200).json({
-                message: "Added to wishlist",
-                inWishlist: true,
-                itadId: effectiveItadId
-            });
-        }
+        const isNew = updatedItem.createdAt === updatedItem.updatedAt;
+
+        return res.status(200).json({
+            message: isNew ? "Added to wishlist" : "Wishlist preferences updated",
+            inWishlist: true,
+            itadId: effectiveItadId
+        });
     } catch (error) {
         error.logContext = { userId: hashId(userId) };
         next(error);
@@ -148,16 +135,15 @@ export const getWishlist = async (req, res, next) => {
     const userId = req.session.userId;
 
     try {
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: "User not found" });
-
-        if (!user.wishlist || user.wishlist.length === 0) {
+        const wishlistItems = await WishlistItem.find({ userId });
+        
+        if (!wishlistItems || wishlistItems.length === 0) {
             return res.status(200).json({ wishlist: [] });
         }
 
         // 1. Collect all ITAD IDs for batch fetching and Redis keys
-        const itadIds = user.wishlist.map(item => item.itadId).filter(id => !!id);
-        const cacheKeys = user.wishlist.map(item => `game:wishlist:${item.gameId}`);
+        const itadIds = wishlistItems.map(item => item.itadId).filter(id => !!id);
+        const cacheKeys = wishlistItems.map(item => `game:wishlist:${item.gameId}`);
 
         // 2. Parallel fetch: Prices from ITAD and Details from Redis
         const [priceMap, cachedDetails] = await Promise.all([
@@ -166,7 +152,7 @@ export const getWishlist = async (req, res, next) => {
         ]);
 
         // 3. Build wishlist with cached details and live prices
-        const wishlistWithDetails = await Promise.all(user.wishlist.map(async (item, index) => {
+        const wishlistWithDetails = await Promise.all(wishlistItems.map(async (item, index) => {
             let details = null;
             const cached = cachedDetails[index];
 
@@ -242,10 +228,7 @@ export const checkWishlistStatus = async (req, res, next) => {
     const userId = req.session.userId;
 
     try {
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: "User not found" });
-
-        const item = user.wishlist.find(i => i.gameId === String(gameId));
+        const item = await WishlistItem.findOne({ userId, gameId: String(gameId) });
         res.status(200).json({
             inWishlist: !!item,
             targetStores: item ? item.targetStores : []

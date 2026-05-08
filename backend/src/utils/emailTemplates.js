@@ -105,6 +105,59 @@ export const generatePriceDropEmail = (userName, gameName, gameId, drops) => {
     return shell('#10B981', body);
 };
 
+/**
+ * consolidated email for multiple price drops
+ * @param {string} userName
+ * @param {Array<{gameName:string, gameId:string, drops:Array}>} gameDrops
+ */
+export const generateConsolidatedPriceDropEmail = (userName, gameDrops) => {
+    const gameSections = gameDrops.map(gd => {
+        const rows = gd.drops.map(d => {
+            const saving = (d.oldPrice - d.newPrice).toFixed(2);
+            const pct    = Math.round((1 - d.newPrice / d.oldPrice) * 100);
+            return `<tr>
+              <td style="padding:8px 12px;font-size:13px;color:#F0F6FC;border-bottom:1px solid #21262D;">${d.storeName}</td>
+              <td style="padding:8px 12px;font-size:13px;color:#8B949E;text-decoration:line-through;border-bottom:1px solid #21262D;">$${Number(d.oldPrice).toFixed(2)}</td>
+              <td style="padding:8px 12px;font-size:13px;color:#10B981;font-weight:700;border-bottom:1px solid #21262D;">$${Number(d.newPrice).toFixed(2)}</td>
+              <td style="padding:8px 12px;font-size:12px;border-bottom:1px solid #21262D;">
+                <span style="background:#10B98120;color:#10B981;border-radius:4px;padding:1px 6px;">-${pct}%</span>
+              </td>
+            </tr>`;
+        }).join('');
+
+        return `
+            <div style="margin-bottom:32px;padding-bottom:20px;border-bottom:1px dashed #30363D;">
+                <h3 style="margin:0 0 12px;font-size:18px;color:#F0F6FC;">${gd.gameName}</h3>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius:8px;border:1px solid #30363D;overflow:hidden;">
+                    <tr style="background:#0D1117;">
+                        <th style="padding:8px 12px;font-size:11px;text-align:left;color:#6E7681;text-transform:uppercase;">Store</th>
+                        <th style="padding:8px 12px;font-size:11px;text-align:left;color:#6E7681;text-transform:uppercase;">Was</th>
+                        <th style="padding:8px 12px;font-size:11px;text-align:left;color:#6E7681;text-transform:uppercase;">Now</th>
+                        <th style="padding:8px 12px;font-size:11px;text-align:left;color:#6E7681;text-transform:uppercase;">%</th>
+                    </tr>
+                    ${rows}
+                </table>
+                <div style="margin-top:12px;text-align:right;">
+                    <a href="${config.frontendUrl}/games/${gd.gameId}" style="font-size:13px;color:#10B981;text-decoration:none;font-weight:600;">View deals →</a>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const body =
+        `<div style="display:inline-block;background:#10B98115;border:1px solid #10B98140;border-radius:8px;padding:4px 12px;margin-bottom:16px;">
+          <span style="font-size:12px;font-weight:700;color:#10B981;text-transform:uppercase;letter-spacing:1px;">💸 Bulk Price Drop Alert</span>
+        </div>` +
+        heading(`Great news, ${userName || 'Gamer'}!`,
+            `Multiple games on your wishlist have dropped in price. Check out today's best deals:`) +
+        gameSections +
+        `<p style="margin:20px 0 0;font-size:13px;color:#8B949E;text-align:center;">
+          Happy gaming! Don't miss out on these limited-time offers.
+        </p>`;
+
+    return shell('#10B981', body);
+};
+
 // ─── 3. Account Permanently Purged Email ─────────────────────────────────────
 /**
  * @param {string} userName

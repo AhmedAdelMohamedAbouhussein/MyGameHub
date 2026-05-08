@@ -1,6 +1,7 @@
 import axios from "axios";
 import config from "../../config/env.js";
 import userModel from "../../models/User.js";
+import Friendship from "../../models/Friendship.js";
 import { getUserFriendList } from "../allEpicInfo.js";
 import { uploadImageFromUrl } from "../../utils/imageUpload.js";
 import logger from "../../utils/logger.js";
@@ -61,10 +62,6 @@ export async function epicReturn(req, res) {
     const dbUser = await userModel.findById(userId);
     if (!dbUser) return res.status(404).json({ error: "User not found" });
 
-    // Sync Friends
-    const existingFriends = dbUser.friends?.get("Epic") || [];
-    const friends = await getUserFriendList(eosAccessToken, epicId, existingFriends);
-
     // Update Linked Account
     let linkedAccounts = dbUser.linkedAccounts || new Map();
     let epicAccounts = linkedAccounts.get("Epic") || [];
@@ -82,13 +79,58 @@ export async function epicReturn(req, res) {
     dbUser.linkedAccounts = linkedAccounts;
     dbUser.markModified("linkedAccounts");
 
-    // Update Friends
-    if (!dbUser.friends) dbUser.friends = new Map();
-    let currentFriends = dbUser.friends.get("Epic") || [];
-    currentFriends = currentFriends.filter(f => f.linkedAccountId !== epicId);
-    const mappedFriends = friends.map(f => ({ ...f, linkedAccountId: epicId }));
-    dbUser.friends.set("Epic", [...currentFriends, ...mappedFriends]);
-    dbUser.markModified("friends");
+    // 4. Process Friends with Diff-based Sync (Smart Update)
+    const friendsList = await getUserFriendList(eosAccessToken, epicId, existingAcc?.friends || []);
+    const existingFriends = await Friendship.find({ userId, source: "Epic", linkedAccountId: epicId });
+    const existingFriendsMap = new Map(existingFriends.map(f => [f.externalId, f]));
+
+    const friendBulkOps = [];
+    const newFriendExternalIds = new Set();
+
+    for (const f of friendsList) {
+      newFriendExternalIds.add(f.externalId);
+      const existing = existingFriendsMap.get(f.externalId);
+
+      const friendDoc = {
+        userId,
+        friendUserPublicID: existing?.friendUserPublicID || null,
+        externalId: f.externalId,
+        linkedAccountId: epicId,
+        displayName: f.displayName,
+        profileUrl: f.profileUrl,
+        avatar: f.avatar,
+        originalAvatarUrl: f.originalAvatarUrl,
+        status: "accepted",
+        source: "Epic",
+        requestedByMe: false
+      };
+
+      // Only update if changed
+      if (!existing || existing.displayName !== f.displayName) {
+        friendBulkOps.push({
+          updateOne: {
+            filter: { userId, source: "Epic", externalId: f.externalId, linkedAccountId: epicId },
+            update: { $set: friendDoc },
+            upsert: true
+          }
+        });
+      }
+    }
+
+    // Cleanup: Remove friends that are no longer in Epic
+    const friendsToDelete = existingFriends
+      .filter(f => !newFriendExternalIds.has(f.externalId))
+      .map(f => f._id);
+
+    if (friendsToDelete.length > 0) {
+      friendBulkOps.push({
+        deleteMany: { filter: { _id: { $in: friendsToDelete } } }
+      });
+    }
+
+    if (friendBulkOps.length > 0) {
+      await Friendship.bulkWrite(friendBulkOps, { ordered: false });
+    }
 
     await dbUser.save();
     logger.info({ userId: hashId(userId), provider: 'Epic' }, 'Epic sync complete');

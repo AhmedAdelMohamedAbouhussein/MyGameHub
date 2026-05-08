@@ -78,7 +78,7 @@ function SyncWithPSN() {
                         const npsso = event.data.npsso;
                         await apiClient.post(`/sync/psn`, { npsso });
                         toast.success("PlayStation synced successfully!");
-                        window.location.href = "/MyGameHub/library";
+                        window.location.href = "/library";
                     } catch (err) {
                         toast.error("Sync failed");
                         console.error(err.response?.data?.error || err.message);

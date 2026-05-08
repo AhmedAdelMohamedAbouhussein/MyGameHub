@@ -1,4 +1,5 @@
 import userModel from '../../models/User.js'
+import Friendship from '../../models/Friendship.js';
 import Notification from '../../models/Notification.js';
 import logger from '../../utils/logger.js';
 import { hashId } from '../../utils/logSanitize.js';
@@ -30,28 +31,42 @@ export const addFriends = async (req, res, next) => {
       return next(error);
     }
 
-    // Add to current user's friends (only if not already added)
-    await userModel.updateOne(
-      { publicID, "friends.User.user": { $ne: friendPublicID } },
-      { $push: { "friends.User": { user: friendPublicID, requestedByMe: true, status: "pending" } } }
-    );
+    // Check if friendship already exists
+    const existing = await Friendship.findOne({ userId: user._id, friendUserPublicID: friendPublicID, source: "User" });
+    if (existing) {
+        return res.status(400).json({ message: "Friendship already exists or request pending" });
+    }
 
-    // Add to friend's friends (only if not already added)
-    const friendUpdate = await userModel.updateOne(
-      { publicID: friendPublicID, "friends.User.user": { $ne: publicID } },
-      { $push: { "friends.User": { user: publicID, requestedByMe: false, status: "pending" } } }
-    );
+    // Create friendship for sender
+    await Friendship.create({
+        userId: user._id,
+        friendUserPublicID: friendPublicID,
+        displayName: friend.name,
+        avatar: friend.profilePicture,
+        status: "pending",
+        source: "User",
+        requestedByMe: true
+    });
 
-    // Create notification for friend (if update succeeded)
-    if (friendUpdate.modifiedCount > 0) {
-      await Notification.create({
+    // Create friendship for receiver
+    await Friendship.create({
+        userId: friend._id,
+        friendUserPublicID: publicID,
+        displayName: user.name,
+        avatar: user.profilePicture,
+        status: "pending",
+        source: "User",
+        requestedByMe: false
+    });
+
+    // Create notification for friend
+    await Notification.create({
         recipient: friend._id,
         sender: publicID,
         type: 'friend_request',
         message: `${user.name} sent you a friend request.`,
         link: '/managefriends'
-      });
-    }
+    });
 
     res.status(200).json({ message: "Friend request sent!" });
   } catch (err) {

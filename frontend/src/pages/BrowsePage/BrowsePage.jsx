@@ -18,7 +18,7 @@ const BrowseGamesPage = () => {
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedSearch(searchTerm);
-        }, 1000);
+        }, 2000); // Increased to 1.5s for a more "lingering" feel
         return () => clearTimeout(handler);
     }, [searchTerm]);
 
@@ -41,6 +41,7 @@ const BrowseGamesPage = () => {
                 }));
         },
         staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+        placeholderData: (previousData) => previousData, // Keep old results visible while fetching new ones
     });
 
     const handleGameClick = (game) => {
@@ -109,68 +110,66 @@ const BrowseGamesPage = () => {
                                 </span>
                             </div>
 
-                            {loading ? (
-                                <div className="py-32">
-                                    <LoadingScreen />
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-32">
-                                    {games.length > 0 ? (
-                                        games.map((game, index) => (
-                                            <div
-                                                key={game.id}
-                                                onClick={() => handleGameClick(game)}
-                                                className="group relative bg-midnight-800/40 backdrop-blur-md rounded-3xl border border-white/5 overflow-hidden cursor-pointer transition-all duration-500 hover:border-accent/40 hover:-translate-y-2 hover:bg-midnight-700 shadow-2xl shadow-black/20 animate-in fade-in slide-in-from-bottom-4"
-                                                style={{ animationDelay: `${index * 40}ms` }}
-                                            >
-                                                {/* Portrait Aspect Ratio */}
-                                                <div className="relative aspect-[3/4.2] overflow-hidden">
-                                                    <img
-                                                        src={optimizeImage(game.image, 420)}
-                                                        alt={game.name}
-                                                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                                                    />
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-32 transition-opacity duration-500" style={{ opacity: loading && games.length > 0 ? 0.6 : 1 }}>
+                                {games.length === 0 && loading ? (
+                                    <div className="col-span-full py-40">
+                                        <LoadingScreen />
+                                    </div>
+                                ) : games.length > 0 ? (
+                                    games.map((game, index) => (
+                                        <div
+                                            key={game.id}
+                                            onClick={() => handleGameClick(game)}
+                                            className="group relative bg-midnight-800/40 backdrop-blur-md rounded-3xl border border-white/5 overflow-hidden cursor-pointer transition-all duration-500 hover:border-accent/40 hover:-translate-y-2 hover:bg-midnight-700 shadow-2xl shadow-black/20 animate-in fade-in slide-in-from-bottom-4"
+                                            style={{ animationDelay: `${index * 40}ms` }}
+                                        >
+                                            {/* Portrait Aspect Ratio */}
+                                            <div className="relative aspect-[3/4.2] overflow-hidden">
+                                                <img
+                                                    src={optimizeImage(game.image, 420)}
+                                                    alt={game.name}
+                                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                                />
 
-                                                    {/* Blur Overlay on Hover */}
-                                                    <div className="absolute inset-0 bg-midnight-900/40 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
-                                                        <span className="px-5 py-2 rounded-xl bg-accent text-white text-[9px] font-black uppercase tracking-widest shadow-xl scale-75 group-hover:scale-100 transition-transform">
-                                                            Details
-                                                        </span>
-                                                    </div>
+                                                {/* Blur Overlay on Hover */}
+                                                <div className="absolute inset-0 bg-midnight-900/40 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
+                                                    <span className="px-5 py-2 rounded-xl bg-accent text-white text-[9px] font-black uppercase tracking-widest shadow-xl scale-75 group-hover:scale-100 transition-transform">
+                                                        Details
+                                                    </span>
                                                 </div>
+                                            </div>
 
-                                                {/* Info Area */}
-                                                <div className="p-4 space-y-2">
-                                                    <h3 className="text-xs font-black text-text-primary uppercase tracking-tight truncate group-hover:text-accent transition-colors leading-relaxed">
-                                                        {game.name}
-                                                    </h3>
-                                                    <div className="flex items-center justify-between opacity-60">
-                                                        <span className="text-[9px] font-bold text-text-muted uppercase">{game.released}</span>
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
-                                                    </div>
+                                            {/* Info Area */}
+                                            <div className="p-4 space-y-2">
+                                                <h3 className="text-xs font-black text-text-primary uppercase tracking-tight truncate group-hover:text-accent transition-colors leading-relaxed">
+                                                    {game.name}
+                                                </h3>
+                                                <div className="flex items-center justify-between opacity-60">
+                                                    <span className="text-[9px] font-bold text-text-muted uppercase">{game.released}</span>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
                                                 </div>
+                                            </div>
 
-                                                {/* Ambient Border Glow */}
-                                                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="col-span-full py-40 text-center space-y-6">
-                                            <div className="text-6xl text-text-muted/20">👾</div>
-                                            <div className="space-y-2">
-                                                <h3 className="text-2xl font-black text-white uppercase slant-1">Ghost Signal</h3>
-                                                <p className="text-text-muted font-medium max-w-xs mx-auto">We couldn't find any games matching your request. Try adjusting your search term.</p>
-                                            </div>
-                                            <button
-                                                onClick={() => setSearchTerm("")}
-                                                className="text-xs font-black text-accent uppercase tracking-widest hover:underline pt-4"
-                                            >
-                                                Clear Search
-                                            </button>
+                                            {/* Ambient Border Glow */}
+                                            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                         </div>
-                                    )}
-                                </div>
-                            )}
+                                    ))
+                                ) : (
+                                    <div className="col-span-full py-40 text-center space-y-6">
+                                        <div className="text-6xl text-text-muted/20">👾</div>
+                                        <div className="space-y-2">
+                                            <h3 className="text-2xl font-black text-white uppercase slant-1">Ghost Signal</h3>
+                                            <p className="text-text-muted font-medium max-w-xs mx-auto">We couldn't find any games matching your request. Try adjusting your search term.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setSearchTerm("")}
+                                            className="text-xs font-black text-accent uppercase tracking-widest hover:underline pt-4"
+                                        >
+                                            Clear Search
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </section>
 
                     </div>

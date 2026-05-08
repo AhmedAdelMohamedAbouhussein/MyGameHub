@@ -1,4 +1,5 @@
 import userModel from '../../models/User.js'
+import Friendship from '../../models/Friendship.js';
 
 export const acceptFriends = async (req, res, next) => {
   const friendPublicID = decodeURIComponent(req.params.friendId); // param now refers to friend's publicID
@@ -15,22 +16,22 @@ export const acceptFriends = async (req, res, next) => {
       error.status = 404;
       return next(error);
     }
-    
+
     const publicID = user.publicID;
 
-    // Update current user (only if status is still pending)
-    const userUpdate = await userModel.updateOne(
-      { publicID, "friends.User.user": friendPublicID, "friends.User.status": "pending" },
-      { $set: { "friends.User.$.status": "accepted" } }
+    // Update status to accepted for both friendship documents
+    const result = await Friendship.updateMany(
+      {
+        $or: [
+          { userId: user._id, friendUserPublicID: friendPublicID, source: "User" },
+          { userId: friend._id, friendUserPublicID: publicID, source: "User" }
+        ],
+        status: "pending"
+      },
+      { $set: { status: "accepted" } }
     );
 
-    // Update friend (only if status is still pending)
-    const friendUpdate = await userModel.updateOne(
-      { publicID: friendPublicID, "friends.User.user": publicID, "friends.User.status": "pending" },
-      { $set: { "friends.User.$.status": "accepted" } }
-    );
-
-    if (!userUpdate.modifiedCount || !friendUpdate.modifiedCount) {
+    if (result.modifiedCount === 0) {
       const error = new Error("No pending request found to accept");
       error.status = 400;
       return next(error);

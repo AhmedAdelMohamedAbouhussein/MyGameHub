@@ -105,8 +105,8 @@ function LibraryPage() {
     if (!ownedGames) return [];
 
     // 1. Flatten into per-platform records
-    let baseGames = Object.entries(ownedGames).flatMap(([platform, games]) =>
-      Object.entries(games).map(([gameId, game]) => ({
+    let baseGames = Object.entries(ownedGames || {}).flatMap(([platform, games]) =>
+      Object.entries(games || {}).map(([gameId, game]) => ({
         ...game,
         platform,
         gameId
@@ -117,11 +117,13 @@ function LibraryPage() {
     // Note: We use gameName for now as a simple key.
     const unifiedMap = new Map();
     baseGames.forEach(g => {
-      const key = g.gameName.toLowerCase().trim();
+      const key = g.gameName?.toLowerCase().trim() || "unknown";
+      const ownersList = g.owners || [];
+
       if (unifiedMap.has(key)) {
         const existing = unifiedMap.get(key);
         // Merge owners and platforms
-        existing.allOwners = [...existing.allOwners, ...g.owners.map(o => ({ ...o, platform: g.platform }))];
+        existing.allOwners = [...existing.allOwners, ...ownersList.map(o => ({ ...o, platform: g.platform }))];
         existing.allPlatforms = Array.from(new Set([...existing.allPlatforms, g.platform]));
         existing.maxProgress = Math.max(existing.maxProgress, g.maxProgress || 0);
         // Sum hours (could be refined)
@@ -129,7 +131,7 @@ function LibraryPage() {
       } else {
         unifiedMap.set(key, {
           ...g,
-          allOwners: g.owners.map(o => ({ ...o, platform: g.platform })),
+          allOwners: ownersList.map(o => ({ ...o, platform: g.platform })),
           allPlatforms: [g.platform],
           totalHoursNum: parseTime(g.totalHours || "0h 0m 0s")
         });
@@ -140,7 +142,7 @@ function LibraryPage() {
 
     // 3. Filter
     if (filterPlatform !== "all") {
-      allGames = allGames.filter(game => game.allPlatforms.some(p => p.toLowerCase() === filterPlatform.toLowerCase()));
+      allGames = allGames.filter(game => game.allPlatforms?.some(p => p?.toLowerCase() === filterPlatform.toLowerCase()));
     }
 
     if (searchQuery.trim() !== "") {

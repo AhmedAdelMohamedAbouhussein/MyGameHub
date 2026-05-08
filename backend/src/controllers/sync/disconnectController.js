@@ -1,4 +1,6 @@
 import userModel from "../../models/User.js";
+import UserGame from "../../models/UserGame.js";
+import Friendship from "../../models/Friendship.js";
 import logger from "../../utils/logger.js";
 import { hashId } from "../../utils/logSanitize.js";
 
@@ -21,7 +23,7 @@ export const disconnectAccount = async (req, res, next) => {
         if (user.linkedAccounts && user.linkedAccounts.has(platform)) {
             let accounts = user.linkedAccounts.get(platform);
             accounts = accounts.filter(acc => acc.accountId !== accountId);
-            
+
             if (accounts.length === 0) {
                 user.linkedAccounts.delete(platform);
             } else {
@@ -29,44 +31,24 @@ export const disconnectAccount = async (req, res, next) => {
             }
         }
 
-        // 2. Remove from Owned Games
-        if (user.ownedGames && user.ownedGames.has(platform)) {
-            let gamesMap = user.ownedGames.get(platform);
-            
-            for (const [gameId, game] of gamesMap.entries()) {
-                // Filter out this account from owners
-                game.owners = game.owners.filter(o => o.accountId !== accountId);
-                
-                if (game.owners.length === 0) {
-                    // No owners left for this platform, remove the game
-                    gamesMap.delete(gameId);
-                } else {
-                    // Update summary stats
-                    game.maxProgress = Math.max(...game.owners.map(o => o.progress || 0));
-                    // totalHours update could go here
-                }
-            }
-            
-            if (gamesMap.size === 0) {
-                user.ownedGames.delete(platform);
+        // 2. Remove from Owned Games (Normalized Collection)
+        const gamesOnPlatform = await UserGame.find({ userId, platform });
+
+        for (const game of gamesOnPlatform) {
+            game.owners = game.owners.filter(o => o.accountId !== accountId);
+
+            if (game.owners.length === 0) {
+                await UserGame.deleteOne({ _id: game._id });
+            } else {
+                game.maxProgress = Math.max(...game.owners.map(o => o.progress || 0));
+                await game.save();
             }
         }
 
-        // 3. Remove Friends
-        if (user.friends && user.friends.has(platform)) {
-            let friendsList = user.friends.get(platform);
-            friendsList = friendsList.filter(f => f.linkedAccountId !== accountId);
-            
-            if (friendsList.length === 0) {
-                user.friends.delete(platform);
-            } else {
-                user.friends.set(platform, friendsList);
-            }
-        }
+        // 3. Remove Friends (Normalized Collection)
+        await Friendship.deleteMany({ userId, source: platform, linkedAccountId: accountId });
 
         user.markModified('linkedAccounts');
-        user.markModified('ownedGames');
-        user.markModified('friends');
         await user.save();
 
         res.status(200).json({ message: `Disconnected ${platform} account ${accountId} successfully.` });

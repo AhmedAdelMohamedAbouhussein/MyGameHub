@@ -17,7 +17,7 @@ export const updateProfile = async (req, res, next) => {
         }
         if (allowPublicFriendRequests !== undefined) updateData.allowPublicFriendRequests = !!allowPublicFriendRequests;
         if (themeSongId !== undefined) updateData.themeSongId = String(themeSongId).trim().substring(0, 50);
-        
+
         if (masterpieceGame !== undefined) {
             if (masterpieceGame === null) {
                 updateData.masterpieceGame = null;

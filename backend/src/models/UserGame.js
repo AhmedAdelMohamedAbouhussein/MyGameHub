@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
 const ownerSchema = new mongoose.Schema({
-    accountId: { type: String, required: true }, // The external ID of the specific account (e.g. SteamID)
-    accountName: { type: String },               // Cached display name for the account
+    accountId: { type: String, required: true },
+    accountName: { type: String },
     hoursPlayed: { type: String, default: null },
     lastPlayed: { type: Date, default: null },
     progress: { type: Number, default: 0, min: 0, max: 100 },
@@ -10,7 +10,7 @@ const ownerSchema = new mongoose.Schema({
     maxGamerscore: { type: Number },
     achievements: [
         {
-            id: { type: String }, // Platform-specific achievement ID
+            id: { type: String },
             title: { type: String },
             description: { type: String },
             unlocked: { type: Boolean, default: false },
@@ -21,29 +21,36 @@ const ownerSchema = new mongoose.Schema({
     ]
 }, { _id: false });
 
-const userGameSchema = new mongoose.Schema({
+const UserGameSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true
+    },
     gameName: {
         type: String,
         required: true,
     },
     gameId: {
-        type: String, // This remains the platform-specific ID for raw storage, but title is used for unification
+        type: String,
         required: true,
     },
     platform: {
         type: String,
         required: true,
+        index: true
     },
     coverImage: {
-        type: String, // URL to the game's cover image
+        type: String,
         default: null,
     },
-    // The owners array tracks multiple accounts owning this game on this platform (or unifies across platforms in the UI)
     owners: [ownerSchema],
-
-    // Summary stats (Max/Total across all owners)
     totalHours: { type: String },
     maxProgress: { type: Number, default: 0 }
-}, { _id: false });
+}, { timestamps: true });
 
-export default userGameSchema; // ✅ export schema, not model
+// Compound index to quickly find a specific game for a user
+UserGameSchema.index({ userId: 1, platform: 1, gameId: 1 }, { unique: true });
+
+export default mongoose.model('UserGame', UserGameSchema);

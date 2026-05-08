@@ -1,6 +1,8 @@
 import axios from 'axios';
 import config from '../../config/env.js'
 import userModel from "../../models/User.js";
+import UserGame from "../../models/UserGame.js";
+import Friendship from "../../models/Friendship.js";
 import { uploadImageFromUrl } from "../../utils/imageUpload.js";
 import logger from "../../utils/logger.js";
 import { hashId } from '../../utils/logSanitize.js';
@@ -148,43 +150,25 @@ export async function xboxReturn(req, res) {
         linkedAccounts.set("Xbox", xboxAccounts);
         dbUser.linkedAccounts = linkedAccounts;
 
-        // 2. Update Friends
-        const friendsList = await getXboxFriends(xuid, userHash, xstsToken, dbUser.friends?.get("Xbox") || []);
-        if (!dbUser.friends) dbUser.friends = new Map();
-
-        let currentXboxFriends = dbUser.friends.get("Xbox") || [];
-        currentXboxFriends = currentXboxFriends.filter(f => f.linkedAccountId !== xuid);
-
-        const newFriends = friendsList.map(f => ({
-            ...f,
-            linkedAccountId: xuid,
-            status: "accepted",
-            source: "Xbox",
-            avatar: f.avatar,
-            originalAvatarUrl: f.originalAvatarUrl
-        }));
-
-        // Deduplicate across all Xbox accounts for this user
-        const friendsMap = new Map();
-        [...currentXboxFriends, ...newFriends].forEach(f => {
-            friendsMap.set(f.externalId, f);
-        });
-
-        dbUser.friends.set("Xbox", Array.from(friendsMap.values()));
-
-        // 3. Update Owned Games
-        const noAchGames = await getXboxOwnedGames(xuid, userHash, xstsToken);
+        // 2. Parallelize API calls for maximum speed
+        const [friendsList, noAchGames] = await Promise.all([
+            getXboxFriends(xuid, userHash, xstsToken, existingAcc?.friends || []),
+            getXboxOwnedGames(xuid, userHash, xstsToken)
+        ]);
+        
+        // Achievements enrichment still depends on noAchGames
         const games = await enrichOwnedGamesWithAchievements(xuid, noAchGames, userHash, xstsToken);
+        
+        // 3. Fetch all existing games for this user/platform once
+        const existingGames = await UserGame.find({ userId, platform: "Xbox" });
+        const existingGamesMap = new Map(existingGames.map(g => [g.gameId, g]));
 
-        if (!dbUser.ownedGames) dbUser.ownedGames = new Map();
-        let xboxGamesMap = dbUser.ownedGames.get("Xbox") || new Map();
-
+        // 4. Process Games in memory
+        const gameBulkOps = [];
         for (const game of games) {
             if (!game || !game.gameId) continue;
-
             const gameId = String(game.gameId);
-
-            let existingGame = xboxGamesMap.get(gameId);
+            
             const ownerRecord = {
                 accountId: xuid,
                 accountName: gamertag,
@@ -196,27 +180,91 @@ export async function xboxReturn(req, res) {
                 achievements: game.achievements || []
             };
 
+            const existingGame = existingGamesMap.get(gameId);
+            let updatedOwners = [];
+            
             if (existingGame) {
-                const existingOwnerIndex = existingGame.owners.findIndex(o => o.accountId === xuid);
-                if (existingOwnerIndex > -1) {
-                    existingGame.owners[existingOwnerIndex] = ownerRecord;
+                const ownerIndex = existingGame.owners.findIndex(o => o.accountId === xuid);
+                updatedOwners = [...existingGame.owners];
+                if (ownerIndex > -1) {
+                    updatedOwners[ownerIndex] = ownerRecord;
                 } else {
-                    existingGame.owners.push(ownerRecord);
+                    updatedOwners.push(ownerRecord);
                 }
-                existingGame.maxProgress = Math.max(...existingGame.owners.map(o => o.progress || 0));
             } else {
-                xboxGamesMap.set(gameId, {
-                    gameName: game.gameName,
-                    gameId: gameId,
-                    platform: game.platform,
-                    coverImage: game.coverImage,
-                    owners: [ownerRecord],
-                    maxProgress: ownerRecord.progress,
-                    totalHours: ownerRecord.hoursPlayed
+                updatedOwners = [ownerRecord];
+            }
+
+            gameBulkOps.push({
+                updateOne: {
+                    filter: { userId, platform: "Xbox", gameId },
+                    update: {
+                        $set: {
+                            gameName: game.gameName,
+                            coverImage: game.coverImage,
+                            totalHours: ownerRecord.hoursPlayed,
+                            owners: updatedOwners,
+                            maxProgress: Math.max(...updatedOwners.map(o => o.progress || 0))
+                        },
+                        $setOnInsert: { userId, platform: "Xbox", gameId }
+                    },
+                    upsert: true
+                }
+            });
+        }
+
+        // 5. Process Friends with Diff-based Sync
+        const existingFriends = await Friendship.find({ userId, source: "Xbox", linkedAccountId: xuid });
+        const existingFriendsMap = new Map(existingFriends.map(f => [f.externalId, f]));
+        
+        const friendBulkOps = [];
+        const newFriendExternalIds = new Set();
+
+        for (const f of friendsList) {
+            newFriendExternalIds.add(f.externalId);
+            const existing = existingFriendsMap.get(f.externalId);
+            
+            const friendDoc = {
+                userId,
+                friendUserPublicID: existing?.friendUserPublicID || null,
+                externalId: f.externalId,
+                linkedAccountId: xuid,
+                displayName: f.displayName,
+                profileUrl: f.profileUrl,
+                friendsSince: f.friendsSince,
+                avatar: f.avatar,
+                originalAvatarUrl: f.originalAvatarUrl,
+                status: "accepted",
+                source: "Xbox",
+                requestedByMe: false
+            };
+
+            if (!existing || existing.displayName !== f.displayName || existing.avatar !== f.avatar) {
+                friendBulkOps.push({
+                    updateOne: {
+                        filter: { userId, source: "Xbox", externalId: f.externalId, linkedAccountId: xuid },
+                        update: { $set: friendDoc },
+                        upsert: true
+                    }
                 });
             }
         }
-        dbUser.ownedGames.set("Xbox", xboxGamesMap);
+
+        const friendsToDelete = existingFriends
+            .filter(f => !newFriendExternalIds.has(f.externalId))
+            .map(f => f._id);
+        
+        if (friendsToDelete.length > 0) {
+            friendBulkOps.push({
+                deleteMany: { filter: { _id: { $in: friendsToDelete } } }
+            });
+        }
+
+        // 6. Execute DB operations in parallel
+        await Promise.all([
+            gameBulkOps.length > 0 ? UserGame.bulkWrite(gameBulkOps, { ordered: false }) : Promise.resolve(),
+            friendBulkOps.length > 0 ? Friendship.bulkWrite(friendBulkOps, { ordered: false }) : Promise.resolve()
+        ]);
 
         await dbUser.save();
 

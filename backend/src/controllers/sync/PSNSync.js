@@ -1,6 +1,8 @@
 import { exchangeAccessCodeForAuthTokens, exchangeNpssoForAccessCode, getProfileFromUserName } from "psn-api";
 import { getAllOwnedGames, getFriendList } from "../allPSNInfo.js";
 import userModel from "../../models/User.js";
+import UserGame from "../../models/UserGame.js";
+import Friendship from "../../models/Friendship.js";
 import { uploadImageFromUrl } from "../../utils/imageUpload.js";
 import logger from "../../utils/logger.js";
 import { hashId } from "../../utils/logSanitize.js";
@@ -63,71 +65,118 @@ export const PSNloginWithNpsso = async (req, res, next) => {
         linkedAccounts.set("PSN", psnAccounts);
         dbUser.linkedAccounts = linkedAccounts;
 
-        // 2. Update Friends
-        const friendsList = await getFriendList(authorization, dbUser.friends?.get("PSN") || []);
-        if (!dbUser.friends) dbUser.friends = new Map();
+        // 2. Parallelize API calls for maximum speed
+        const [friendsList, games] = await Promise.all([
+            getFriendList(authorization, existingAcc?.friends || []),
+            getAllOwnedGames(authorization)
+        ]);
+        
+        // 3. Fetch all existing games for this user/platform once
+        const existingGames = await UserGame.find({ userId, platform: "PSN" });
+        const existingGamesMap = new Map(existingGames.map(g => [g.gameId, g]));
 
-        let currentPsnFriends = dbUser.friends.get("PSN") || [];
-        currentPsnFriends = currentPsnFriends.filter(f => f.linkedAccountId !== PSNId);
-
-        const newFriends = friendsList.map(f => ({
-            ...f,
-            linkedAccountId: PSNId,
-            status: "accepted",
-            source: "PSN",
-            avatar: f.avatar,
-            originalAvatarUrl: f.originalAvatarUrl
-        }));
-
-        // Deduplicate across all PSN accounts for this user
-        const friendsMap = new Map();
-        [...currentPsnFriends, ...newFriends].forEach(f => {
-            friendsMap.set(f.externalId, f);
-        });
-
-        dbUser.friends.set("PSN", Array.from(friendsMap.values()));
-
-        // 3. Update Owned Games
-        const games = await getAllOwnedGames(authorization);
-        if (!dbUser.ownedGames) dbUser.ownedGames = new Map();
-        let psnGamesMap = dbUser.ownedGames.get("PSN") || new Map();
-
+        // 4. Process Games in memory
+        const gameBulkOps = [];
         for (const game of games) {
             if (!game || !game.gameId) continue;
-
             const gameId = String(game.gameId);
-
-            let existingGame = psnGamesMap.get(gameId);
+            
             const ownerRecord = {
                 accountId: PSNId,
                 accountName: PSNId,
                 hoursPlayed: game.hoursPlayed,
                 lastPlayed: game.lastPlayed,
                 progress: game.progress || 0,
+                currentGamerscore: 0,
+                maxGamerscore: 0,
                 achievements: game.achievements || []
             };
 
+            const existingGame = existingGamesMap.get(gameId);
+            let updatedOwners = [];
+            
             if (existingGame) {
-                const existingOwnerIndex = existingGame.owners.findIndex(o => o.accountId === PSNId);
-                if (existingOwnerIndex > -1) {
-                    existingGame.owners[existingOwnerIndex] = ownerRecord;
+                const ownerIndex = existingGame.owners.findIndex(o => o.accountId === PSNId);
+                updatedOwners = [...existingGame.owners];
+                if (ownerIndex > -1) {
+                    updatedOwners[ownerIndex] = ownerRecord;
                 } else {
-                    existingGame.owners.push(ownerRecord);
+                    updatedOwners.push(ownerRecord);
                 }
-                existingGame.maxProgress = Math.max(...existingGame.owners.map(o => o.progress || 0));
             } else {
-                psnGamesMap.set(gameId, {
-                    gameName: game.gameName,
-                    gameId: game.gameId,
-                    platform: game.platform,
-                    coverImage: game.coverImage,
-                    owners: [ownerRecord],
-                    maxProgress: ownerRecord.progress,
-                    totalHours: ownerRecord.hoursPlayed
+                updatedOwners = [ownerRecord];
+            }
+
+            gameBulkOps.push({
+                updateOne: {
+                    filter: { userId, platform: "PSN", gameId },
+                    update: {
+                        $set: {
+                            gameName: game.gameName,
+                            coverImage: game.coverImage,
+                            totalHours: ownerRecord.hoursPlayed,
+                            owners: updatedOwners,
+                            maxProgress: Math.max(...updatedOwners.map(o => o.progress || 0))
+                        },
+                        $setOnInsert: { userId, platform: "PSN", gameId }
+                    },
+                    upsert: true
+                }
+            });
+        }
+
+        // 5. Process Friends with Diff-based Sync
+        const existingFriends = await Friendship.find({ userId, source: "PSN", linkedAccountId: PSNId });
+        const existingFriendsMap = new Map(existingFriends.map(f => [f.externalId, f]));
+        
+        const friendBulkOps = [];
+        const newFriendExternalIds = new Set();
+
+        for (const f of friendsList) {
+            newFriendExternalIds.add(f.externalId);
+            const existing = existingFriendsMap.get(f.externalId);
+            
+            const friendDoc = {
+                userId,
+                friendUserPublicID: existing?.friendUserPublicID || null,
+                externalId: f.externalId,
+                linkedAccountId: PSNId,
+                displayName: f.displayName,
+                profileUrl: f.profileUrl,
+                friendsSince: f.friendsSince,
+                avatar: f.avatar,
+                originalAvatarUrl: f.originalAvatarUrl,
+                status: "accepted",
+                source: "PSN",
+                requestedByMe: false
+            };
+
+            if (!existing || existing.displayName !== f.displayName || existing.avatar !== f.avatar) {
+                friendBulkOps.push({
+                    updateOne: {
+                        filter: { userId, source: "PSN", externalId: f.externalId, linkedAccountId: PSNId },
+                        update: { $set: friendDoc },
+                        upsert: true
+                    }
                 });
             }
         }
-        dbUser.ownedGames.set("PSN", psnGamesMap);
+
+        const friendsToDelete = existingFriends
+            .filter(f => !newFriendExternalIds.has(f.externalId))
+            .map(f => f._id);
+        
+        if (friendsToDelete.length > 0) {
+            friendBulkOps.push({
+                deleteMany: { filter: { _id: { $in: friendsToDelete } } }
+            });
+        }
+
+        // 6. Execute DB operations in parallel
+        await Promise.all([
+            gameBulkOps.length > 0 ? UserGame.bulkWrite(gameBulkOps, { ordered: false }) : Promise.resolve(),
+            friendBulkOps.length > 0 ? Friendship.bulkWrite(friendBulkOps, { ordered: false }) : Promise.resolve()
+        ]);
 
         await dbUser.save();
 

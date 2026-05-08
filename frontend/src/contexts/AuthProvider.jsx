@@ -15,12 +15,10 @@ function AuthProvider({ children }) {
         try {
             const res = await apiClient.get(`/auth/authUser`, { withCredentials: true });
             setUser(res.data.user);
-            console.log("Fetched user:", res.data.user);
         }
         catch (error) {
-            const message = error.response?.data?.message || error.message || "Unknown error";
-            console.log(message);
             setUser(null);
+            console.error("Error fetching user:", error.response?.data?.message || error.message || "Unknown error");
         }
         finally {
             setLoading(false);
