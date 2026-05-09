@@ -141,7 +141,7 @@ export const steamReturn = (req, res, next) => {
                 getOwnedGames(steamId),
                 getUserFriendList(steamId, existingAcc?.friends || [])
             ]);
-            
+
             const games = await getUserAchievements(steamId, noAchGames);
 
             // 2. Fetch all existing games for this user/platform once
@@ -153,7 +153,7 @@ export const steamReturn = (req, res, next) => {
             for (const game of games) {
                 if (!game || !game.gameId) continue;
                 const gameId = String(game.gameId);
-                
+
                 const ownerRecord = {
                     accountId: steamId,
                     accountName: displayName,
@@ -167,7 +167,7 @@ export const steamReturn = (req, res, next) => {
 
                 const existingGame = existingGamesMap.get(gameId);
                 let updatedOwners = [];
-                
+
                 if (existingGame) {
                     const ownerIndex = existingGame.owners.findIndex(o => o.accountId === steamId);
                     updatedOwners = [...existingGame.owners];
@@ -205,14 +205,14 @@ export const steamReturn = (req, res, next) => {
             // 4. Process Friends with Diff-based Sync
             const existingFriends = await Friendship.find({ userId, source: "Steam", linkedAccountId: steamId });
             const existingFriendsMap = new Map(existingFriends.map(f => [f.externalId, f]));
-            
+
             const friendBulkOps = [];
             const newFriendExternalIds = new Set();
 
             for (const f of friendsList) {
                 newFriendExternalIds.add(f.externalId);
                 const existing = existingFriendsMap.get(f.externalId);
-                
+
                 const friendDoc = {
                     userId,
                     friendUserPublicID: existing?.friendUserPublicID || null,
@@ -244,7 +244,7 @@ export const steamReturn = (req, res, next) => {
             const friendsToDelete = existingFriends
                 .filter(f => !newFriendExternalIds.has(f.externalId))
                 .map(f => f._id);
-            
+
             if (friendsToDelete.length > 0) {
                 friendBulkOps.push({
                     deleteMany: { filter: { _id: { $in: friendsToDelete } } }

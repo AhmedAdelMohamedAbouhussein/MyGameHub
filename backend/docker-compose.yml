@@ -2,28 +2,35 @@ version: '3.8'
 
 services:
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
+    container_name: gamehub-backend
+    restart: always
     ports:
       - "8080:8080"
     env_file:
       - .env
     environment:
+      - NODE_ENV=production
       - REDIS_URL=redis://redis:6379
-      # MONGO_ATLAS_URL should be in your .env file
     depends_on:
       - redis
-    restart: unless-stopped
+    networks:
+      - gamehub-network
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    container_name: gamehub-redis
+    restart: always
+    # Redis is NOT exposed to the host/public, only to the 'backend' service
+    networks:
+      - gamehub-network
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
-    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+
+networks:
+  gamehub-network:
+    driver: bridge
 
 volumes:
   redis_data:

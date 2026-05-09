@@ -288,7 +288,9 @@ const GamePage = () => {
                                             </span>
 
                                             <div className="space-y-1">
-                                                <div className="text-5xl sm:text-6xl font-black text-accent tracking-tighter">${game.deals[0].price}</div>
+                                                <div className="text-5xl sm:text-6xl font-black text-accent tracking-tighter">
+                                                    {Number(game.deals[0].price) <= 0 ? "FREE" : `$${Number(game.deals[0].price).toFixed(2)}`}
+                                                </div>
                                                 <p className="text-text-muted font-bold uppercase text-[10px] sm:text-xs tracking-widest">
                                                     On Sale at <span className="text-white">{game.deals[0].store}</span>
                                                 </p>
@@ -298,11 +300,15 @@ const GamePage = () => {
                                                 <div className="grid grid-cols-2 gap-4 py-6 border-y border-white/5">
                                                     <div className="space-y-1">
                                                         <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Historic Low</span>
-                                                        <p className="text-base sm:text-lg font-black text-success">${game.historyLow.all}</p>
+                                                        <p className="text-base sm:text-lg font-black text-success">
+                                                            {Number(game.historyLow.all) <= 0 ? "FREE" : `$${Number(game.historyLow.all).toFixed(2)}`}
+                                                        </p>
                                                     </div>
                                                     <div className="space-y-1">
                                                         <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">1-Year Low</span>
-                                                        <p className="text-base sm:text-lg font-black text-text-primary">${game.historyLow.y1}</p>
+                                                        <p className="text-base sm:text-lg font-black text-text-primary">
+                                                            {Number(game.historyLow.y1) <= 0 ? "FREE" : `$${Number(game.historyLow.y1).toFixed(2)}`}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             )}
@@ -352,7 +358,7 @@ const GamePage = () => {
                                                     </div>
 
                                                     <div className="text-base sm:text-lg font-black text-white tracking-tight">
-                                                        ${deal.price}
+                                                        {Number(deal.price) <= 0 ? "FREE" : `$${Number(deal.price).toFixed(2)}`}
                                                     </div>
                                                 </a>
                                             ))}
@@ -364,7 +370,7 @@ const GamePage = () => {
                     )}
 
                     {/* Price History Chart */}
-                    {game.itadId && (
+                    {game.itadId && game.deals?.[0]?.price > 0 && (
                         <section className="animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-550">
                             <div className="flex items-center gap-4 mb-8">
                                 <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight slant-1">Price History</h2>

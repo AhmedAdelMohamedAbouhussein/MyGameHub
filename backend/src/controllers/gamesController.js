@@ -17,12 +17,41 @@ const TTL_SEARCH = 300;   // 5 min
 
 const formatRequirements = (req) => {
     if (!req) return null;
-    return req
-        // Strip common international labels for Minimum/Recommended
+
+    let text = req
         .replace(/(?:Minimum|Recommended|Mínimo|Recomendados|Recomendado|Configuration minimale|Configuration recommandée|Mindestanforderungen|Empfohlen|システム要件|最低|推奨|Минимальные требования|Рекомендуемые требования|Requisiti minimi|Requisiti consigliati):/gi, '')
-        .replace(/<br\s*\/?>/gi, '\n') // Convert <br> to newlines
-        .replace(/<[^>]*>/g, '')      // Strip any other HTML tags
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]*>/g, '')
         .trim();
+
+    // 🌍 Simple Technical Translation Dictionary
+    const dictionary = {
+        "Prozessor": "Processor",
+        "Arbeitsspeicher": "Memory",
+        "Grafik": "Graphics",
+        "Speicherplatz": "Storage",
+        "Betriebssystem": "OS",
+        "Memoria": "Memory",
+        "Gráficos": "Graphics",
+        "Almacenamiento": "Storage",
+        "Sistema operativo": "OS",
+        "Mémoire vive": "Memory",
+        "Carte graphique": "Graphics",
+        "Espace disque": "Storage",
+        "Système d'exploitation": "OS",
+        "Процессор": "Processor",
+        "Память": "Memory",
+        "Видеокарта": "Graphics",
+        "Место на диске": "Storage",
+        "ОС": "OS",
+    };
+
+    Object.keys(dictionary).forEach(key => {
+        const regex = new RegExp(key, 'gi');
+        text = text.replace(regex, dictionary[key]);
+    });
+
+    return text;
 };
 
 // ── Helper: safe Redis GET ────────────────────────────────────────────────────
@@ -476,10 +505,11 @@ export const getPriceHistory = async (req, res, next) => {
                     key: ITAD_API_KEY,
                     id: itadId,
                     country: "US",
-                    since: "2024-01-01T00:00:00Z"
+                    since: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('.')[0] + "Z"
                 }
             }
         );
+        console.log("historyRes.data", historyRes.data);
 
         // ITAD history/v2 returns an array of deal events
         const raw = historyRes.data || [];

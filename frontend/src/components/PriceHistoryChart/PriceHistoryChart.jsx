@@ -82,14 +82,14 @@ export default function PriceHistoryChart({ itadId, gameName }) {
 
     const handleMouseMove = useCallback((e) => {
         if (!data?.series || !svgRef.current) return;
-        
+
         const stores = Object.keys(data.series);
         const globalPoints = stores.flatMap(s => (data.series[s] || []));
         if (globalPoints.length === 0) return;
 
         const visible = activeStores ?? stores;
         const allPoints = visible.flatMap(s => (data.series[s] || []).map(p => ({ ...p, store: s })));
-        
+
         if (allPoints.length === 0) {
             setTooltip(null);
             return;

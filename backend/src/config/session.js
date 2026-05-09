@@ -15,9 +15,10 @@ const sessionMiddleware = session({
     httpOnly: true,
     //secure: config.nodeEnv === "production",
     //sameSite: config.nodeEnv === "production" ? "none" : "lax",
-    // Forced to true/none for ngrok/production cross-domain support
+    // Forced to true/none for production cross-domain support
     secure: true,
     sameSite: "none",
+    maxAge: 1000 * 60 * 60 * 24 // 1 day
   }
 });
 

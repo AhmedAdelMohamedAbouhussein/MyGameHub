@@ -15,7 +15,6 @@ import { getXboxFriends, getXboxOwnedGames, enrichOwnedGamesWithAchievements } f
 // Xbox config
 const CLIENT_ID = config.azure.clientId;
 const REDIRECT_URI = config.xboxRedirectURL;
-//"https://mariam-noncongruent-nonbeatifically.ngrok-free.dev/sync/xbox/return"; 
 
 const CLIENT_SECRET = config.azure.clientSecret;
 
@@ -155,10 +154,10 @@ export async function xboxReturn(req, res) {
             getXboxFriends(xuid, userHash, xstsToken, existingAcc?.friends || []),
             getXboxOwnedGames(xuid, userHash, xstsToken)
         ]);
-        
+
         // Achievements enrichment still depends on noAchGames
         const games = await enrichOwnedGamesWithAchievements(xuid, noAchGames, userHash, xstsToken);
-        
+
         // 3. Fetch all existing games for this user/platform once
         const existingGames = await UserGame.find({ userId, platform: "Xbox" });
         const existingGamesMap = new Map(existingGames.map(g => [g.gameId, g]));
@@ -168,7 +167,7 @@ export async function xboxReturn(req, res) {
         for (const game of games) {
             if (!game || !game.gameId) continue;
             const gameId = String(game.gameId);
-            
+
             const ownerRecord = {
                 accountId: xuid,
                 accountName: gamertag,
@@ -182,7 +181,7 @@ export async function xboxReturn(req, res) {
 
             const existingGame = existingGamesMap.get(gameId);
             let updatedOwners = [];
-            
+
             if (existingGame) {
                 const ownerIndex = existingGame.owners.findIndex(o => o.accountId === xuid);
                 updatedOwners = [...existingGame.owners];
@@ -216,14 +215,14 @@ export async function xboxReturn(req, res) {
         // 5. Process Friends with Diff-based Sync
         const existingFriends = await Friendship.find({ userId, source: "Xbox", linkedAccountId: xuid });
         const existingFriendsMap = new Map(existingFriends.map(f => [f.externalId, f]));
-        
+
         const friendBulkOps = [];
         const newFriendExternalIds = new Set();
 
         for (const f of friendsList) {
             newFriendExternalIds.add(f.externalId);
             const existing = existingFriendsMap.get(f.externalId);
-            
+
             const friendDoc = {
                 userId,
                 friendUserPublicID: existing?.friendUserPublicID || null,
@@ -253,7 +252,7 @@ export async function xboxReturn(req, res) {
         const friendsToDelete = existingFriends
             .filter(f => !newFriendExternalIds.has(f.externalId))
             .map(f => f._id);
-        
+
         if (friendsToDelete.length > 0) {
             friendBulkOps.push({
                 deleteMany: { filter: { _id: { $in: friendsToDelete } } }

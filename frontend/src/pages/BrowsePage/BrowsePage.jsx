@@ -18,7 +18,7 @@ const BrowseGamesPage = () => {
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedSearch(searchTerm);
-        }, 2000); // Increased to 1.5s for a more "lingering" feel
+        }, 2000); // 2 seconds debounce time
         return () => clearTimeout(handler);
     }, [searchTerm]);
 
@@ -75,8 +75,8 @@ const BrowseGamesPage = () => {
                                 <div className="max-w-2xl mx-auto relative group pt-4">
                                     <div className="absolute -inset-1 bg-gradient-to-r from-accent/20 to-blue-500/20 rounded-3xl blur opacity-0 group-hover:opacity-100 transition duration-1000" />
                                     <div className="relative flex items-center bg-midnight-900/80 backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-3xl p-1.5 focus-within:border-accent/40 shadow-2xl transition-all">
-                                        <div className="pl-6 text-text-muted group-focus-within:text-accent transition-colors">
-                                            <FaSearch size={20} />
+                                        <div className="pl-4 sm:pl-6 text-text-muted group-focus-within:text-accent transition-colors">
+                                            <FaSearch size={18} className="sm:w-5 sm:h-5" />
                                         </div>
                                         <input
                                             type="text"
@@ -86,7 +86,7 @@ const BrowseGamesPage = () => {
                                                 if (e.key === 'Enter') setDebouncedSearch(searchTerm);
                                             }}
                                             placeholder="Search games..."
-                                            className="flex-1 h-14 bg-transparent pl-4 pr-6 text-base font-bold text-white placeholder:text-text-muted outline-none"
+                                            className="flex-1 min-w-0 h-14 bg-transparent pl-3 sm:pl-4 pr-4 sm:pr-6 text-sm sm:text-base font-bold text-white placeholder:text-text-muted outline-none"
                                         />
                                         <button
                                             onClick={() => setDebouncedSearch(searchTerm)}

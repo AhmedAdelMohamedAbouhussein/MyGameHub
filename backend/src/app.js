@@ -26,6 +26,9 @@ import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js'
 
 const app = express();
 
+// Trust the first proxy (Cloudflare/AWS)
+app.set('trust proxy', 1);
+
 
 // ── redis ──────────────────────────────────────────────────────────
 

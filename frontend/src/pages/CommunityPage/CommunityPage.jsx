@@ -9,6 +9,7 @@ import LoadingScreen from "../../components/LoadingScreen/LoadingScreen";
 import AuthContext from "../../contexts/AuthContext.jsx";
 
 import { FaSearch, FaGlobe, FaGamepad, FaHeart, FaBars, FaArrowRight } from "react-icons/fa";
+import BackButton from "../../components/BackButton/BackButton";
 
 function CommunityPage() {
     const { user } = useContext(AuthContext);
@@ -42,6 +43,7 @@ function CommunityPage() {
 
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 <Header />
+                <BackButton />
                 <main className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-8 lg:p-12 relative z-10">
                     <div className="max-w-7xl mx-auto">
 

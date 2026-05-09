@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { googleLogin , googleSignup } from '../controllers/Auth/googleAuthController.js';
+import { googleLogin, googleSignup } from '../controllers/Auth/googleAuthController.js';
 import { authUser } from '../controllers/Auth/authUser.js'
 import { logoutUser } from '../controllers/Auth/logoutUser.js'
 import { resetPassword } from '../controllers/Auth/resetPassword.js'

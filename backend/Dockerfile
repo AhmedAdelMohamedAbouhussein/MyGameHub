@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies cleanly
-RUN npm ci
+RUN npm install
 
 # Copy the rest of the backend files
 COPY . .

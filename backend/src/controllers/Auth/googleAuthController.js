@@ -35,7 +35,7 @@ export const googleLogin = async (req, res, next) => {
         const user = await userModel.findOne({ email: useremail, isDeleted: false });
 
         if (user) {
-            req.session.userId = user._id;
+            req.session.userId = user._id.toString();
 
             req.session.cookie.maxAge = rememberMe ? SEVEN_DAYS : ONE_DAY;
 
@@ -111,7 +111,7 @@ export const googleSignup = async (req, res, next) => {
         const newUser = await userModel.create({ name: username, email: useremail, isVerified: true });
 
         // Log the user in immediately
-        req.session.userId = newUser._id;
+        req.session.userId = newUser._id.toString();
         req.session.cookie.maxAge = 1000 * 60 * 60 * 24; // 1 day default
 
         return req.session.save(err => {

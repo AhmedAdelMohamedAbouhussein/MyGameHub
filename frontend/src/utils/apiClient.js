@@ -4,10 +4,7 @@ const BACKEND_BASE = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 
 const apiClient = axios.create({
     baseURL: `${BACKEND_BASE}/api`,
-    withCredentials: true,
-    headers: {
-        'ngrok-skip-browser-warning': 'true'
-    }
+    withCredentials: true
 });
 
 let csrfToken = null;
@@ -21,9 +18,8 @@ apiClient.interceptors.request.use(async (config) => {
         if (!csrfToken) {
             try {
                 // Use a separate axios call to avoid interceptor recursion
-                const res = await axios.get(`${BACKEND_BASE}/api/csrf-token`, { 
-                    withCredentials: true,
-                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                const res = await axios.get(`${BACKEND_BASE}/api/csrf-token`, {
+                    withCredentials: true
                 });
                 csrfToken = res.data.token;
             } catch (err) {
@@ -53,9 +49,8 @@ apiClient.interceptors.response.use(
 
                 // Fetch a new one
                 try {
-                    const res = await axios.get(`${BACKEND_BASE}/api/csrf-token`, { 
-                        withCredentials: true,
-                        headers: { 'ngrok-skip-browser-warning': 'true' }
+                    const res = await axios.get(`${BACKEND_BASE}/api/csrf-token`, {
+                        withCredentials: true
                     });
                     csrfToken = res.data.token;
                     originalRequest.headers['x-csrf-token'] = csrfToken;
