@@ -140,7 +140,12 @@ export async function epicReturn(req, res) {
     res.redirect(`${FRONTEND_URL}/library?sync=epic_success`);
 
   } catch (error) {
-    logger.error({ userId: hashId(userId), err: error }, 'Epic sync error');
+    logger.error({ 
+      userId: hashId(userId), 
+      message: error.message, 
+      status: error.response?.status,
+      details: error.response?.data
+    }, 'Epic sync error');
     res.redirect(`${FRONTEND_URL}/library?error=epic_sync_failed`);
   }
 }

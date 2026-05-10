@@ -16,6 +16,12 @@ services:
       - redis
     networks:
       - gamehub-network
+    logging:
+      driver: "awslogs"
+      options:
+        awslogs-region: "eu-north-1"
+        awslogs-group: "My-GameHub-Log-Group"
+        awslogs-stream: "backend"
 
   redis:
     image: redis:7-alpine

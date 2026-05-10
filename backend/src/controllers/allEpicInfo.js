@@ -74,7 +74,11 @@ export async function getUserFriendList(accessToken, accountId, existingFriends 
         return result;
 
     } catch (error) {
-        logger.error({ accountId: hashId(accountId), err: error }, 'Epic friends fetch failed');
+        logger.error({ 
+            accountId: hashId(accountId), 
+            message: error.message, 
+            status: error.response?.status 
+        }, 'Epic friends fetch failed');
         return [];
     }
 }

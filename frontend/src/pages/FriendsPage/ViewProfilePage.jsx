@@ -190,7 +190,7 @@ function ViewProfilePage() {
 
                         <div className="relative z-10 flex-shrink-0">
                             <img
-                                src={profilePicture || "https://res.cloudinary.com/dvbmaonhc/image/upload/v1777487049/avatars/no_user.png"}
+                                src={profilePicture || "https://res.cloudinary.com/dvbmaonhc/image/upload/v1777487026/site_assets/no_user.png"}
                                 alt={name}
                                 className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl object-cover ring-4 ring-midnight-500/50 shadow-2xl"
                             />

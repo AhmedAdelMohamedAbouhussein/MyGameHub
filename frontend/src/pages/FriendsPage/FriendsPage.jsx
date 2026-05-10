@@ -182,7 +182,7 @@ function FriendsPage() {
                                     const name = currentPlatform === "User"
                                         ? friend.name || friend.email || "Unknown User"
                                         : friend.displayName || "External Friend";
-                                    const avatar = friend.profilePicture || friend.avatar || "https://res.cloudinary.com/dvbmaonhc/image/upload/v1777487049/avatars/no_user.png";
+                                    const avatar = friend.profilePicture || friend.avatar || "https://res.cloudinary.com/dvbmaonhc/image/upload/v1777487026/site_assets/no_user.png";
 
                                     // Find which user account this friend belongs to
                                     const sourceAccount = currentPlatform === "User" ? null : (user.linkedAccounts?.[currentPlatform]?.find(acc => acc.accountId === friend.linkedAccountId));

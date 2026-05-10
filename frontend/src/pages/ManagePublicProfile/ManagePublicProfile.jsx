@@ -222,7 +222,7 @@ function ManagePublicProfile() {
                                     <div className="flex flex-col items-center gap-4 group">
                                         <div className="relative">
                                             <img
-                                                src={profilePic || user?.profilePicture || "https://res.cloudinary.com/dvbmaonhc/image/upload/v1777487049/avatars/no_user.png"}
+                                                src={profilePic || user?.profilePicture || "https://res.cloudinary.com/dvbmaonhc/image/upload/v1777487026/site_assets/no_user.png"}
                                                 alt="Profile"
                                                 className="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover ring-4 ring-accent/20 group-hover:ring-accent/50 transition-all duration-500 shadow-2xl"
                                             />

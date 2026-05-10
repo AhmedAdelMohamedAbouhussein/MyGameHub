@@ -17,9 +17,11 @@ const errorHandeler = (err, req, res, next) => {
     // Controllers should NOT call logger.error() before next(err); instead they set:
     //   err.logContext = { userId: hashId(userId), ... }
     const logMeta = {
-        err,
+        message: err.message,
         url: req.originalUrl,
         method: req.method,
+        status: err.status || err.response?.status,
+        stack: config.nodeEnv === 'production' ? undefined : err.stack,
         ...(err.logContext || {})   // merge in any controller-supplied context
     };
     logger.error(logMeta, 'Internal Server Error');

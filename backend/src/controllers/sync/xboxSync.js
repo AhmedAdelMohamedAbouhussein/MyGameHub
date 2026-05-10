@@ -271,7 +271,12 @@ export async function xboxReturn(req, res) {
 
     }
     catch (err) {
-        logger.error({ userId: hashId(userId), err }, 'Xbox auth error');
+        logger.error({ 
+            userId: hashId(userId), 
+            message: err.message, 
+            status: err.response?.status,
+            details: err.response?.data 
+        }, 'Xbox auth error');
         res.status(500).json({
             error: "Xbox authentication failed",
             details: err.response?.data || err.message,
