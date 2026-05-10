@@ -1,0 +1,21 @@
+{
+  "name": "My GameHub",
+  "short_name": "GameHub",
+  "description": "Unify your gaming library across Steam, Xbox, PlayStation, and Epic Games. Track achievement progress, monitor live price drops, and manage your cross-platform wishlist in one dashboard.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "https://res.cloudinary.com/dvbmaonhc/image/upload/c_scale,w_192/v1778437307/My_GameHub_Logo_real_black_ccnq4t.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://res.cloudinary.com/dvbmaonhc/image/upload/c_scale,w_512/v1778437307/My_GameHub_Logo_real_black_ccnq4t.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

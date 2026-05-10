@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import AuthContext from "../../contexts/AuthContext";
 import apiClient from "../../utils/apiClient.js";
 import {
-    FaCaretLeft, FaCaretRight, FaSteam, FaXbox, FaGamepad,
+    FaCaretLeft, FaCaretRight, FaSteam, FaXbox, FaGamepad, FaHeart,
     FaComments, FaUserFriends, FaCog, FaSignOutAlt, FaChevronDown, FaChevronUp, FaTimes, FaGlobe, FaTrophy
 } from "react-icons/fa";
 import { SiEpicgames, SiGogdotcom, SiPlaystation } from 'react-icons/si';
@@ -48,6 +48,7 @@ function Aside({ isOpen: externalOpen, onClose }) {
                 { icon: FaGamepad, label: "My Library", to: "/library" },
                 { icon: FaGlobe, label: "View Public Profile", to: user ? `/profile/${encodeURIComponent(user.publicID)}` : "#" },
                 { icon: FaCog, label: "Customize Public Profile", to: "/manage-profile" },
+                { icon: FaHeart, label: "My Wishlist", to: "/wishlist" },
             ]
         },
         {
@@ -94,21 +95,19 @@ function Aside({ isOpen: externalOpen, onClose }) {
             >
                 <div className="flex flex-col h-full">
 
-                    {/* Top profile area (Internal Toggle) */}
+                    {/* Top logo area */}
                     <div className="p-6 border-b border-white/5 h-20 flex items-center justify-between overflow-hidden">
                         {sidebarOpen && (
-                            <div className="flex items-center gap-3 min-w-0 animate-in fade-in slide-in-from-left-4 duration-500">
-                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-accent-glow flex items-center justify-center text-midnight-900 shadow-lg flex-shrink-0 overflow-hidden">
-                                    {user.profilePicture && user.profilePicture.trim() !== ""
-                                        ? <img src={user.profilePicture} alt="Avatar" className="w-full h-full object-cover" />
-                                        : <span className="font-black text-xs uppercase">{user.name?.charAt(0)}</span>
-                                    }
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-sm font-black text-text-primary uppercase tracking-tight truncate">{user.name}</p>
-                                    <p className="text-[10px] font-bold text-accent uppercase tracking-widest">{user.publicID}</p>
-                                </div>
-                            </div>
+                            <Link to="/" className="flex items-center gap-3 min-w-0 animate-in fade-in slide-in-from-left-4 duration-500">
+                                <img 
+                                    src="https://res.cloudinary.com/dvbmaonhc/image/upload/v1778437307/My_GameHub_Logo_real_black_ccnq4t.png" 
+                                    alt="Logo" 
+                                    className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]"
+                                />
+                                <span className="text-sm font-black tracking-tighter text-transparent bg-gradient-to-r from-accent to-accent-glow bg-clip-text uppercase truncate">
+                                    My GameHub
+                                </span>
+                            </Link>
                         )}
                         <button
                             onClick={toggleSidebar}

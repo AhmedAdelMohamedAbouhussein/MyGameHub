@@ -244,7 +244,7 @@ function SyncWithPSN() {
                             </button>
                         </div>
 
-                        {/* Chrome Extension */}
+                        {/* Chrome Extension - Commented out as it's not a feature yet
                         <div className="card-surface p-5 space-y-3">
                             <h2 className="text-xs font-black uppercase tracking-widest text-text-muted">Or use the GameHub Chrome Extension</h2>
                             <p className="text-xs text-text-muted leading-relaxed">
@@ -258,7 +258,8 @@ function SyncWithPSN() {
                                 <SiPlaystation size={16} />
                                 {loading ? "Waiting for extension..." : "Sync via Extension"}
                             </button>
-                        </div>
+                        </div> 
+                        */}
 
                         {/* Notes */}
                         <div className="card-surface p-5 space-y-3">

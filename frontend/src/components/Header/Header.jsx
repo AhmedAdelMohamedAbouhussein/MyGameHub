@@ -152,8 +152,8 @@ function Header() {
                             )}
                         </nav>
 
-                        {/* Desktop User Actions */}
-                        <div className="hidden lg:flex items-center gap-3">
+                        {/* User Actions */}
+                        <div className="flex items-center gap-2 sm:gap-3">
                             {user ? (
                                 <>
                                     {/* Notification Center */}
@@ -177,7 +177,7 @@ function Header() {
 
                                         {/* Notifications Dropdown */}
                                         <div className={`
-                                            absolute right-0 top-full mt-3 w-80 p-2
+                                            absolute right-0 top-full mt-3 w-[calc(100vw-2rem)] sm:w-80 p-2
                                             bg-midnight-700/95 backdrop-blur-xl border border-midnight-500/30
                                             rounded-2xl shadow-2xl shadow-black/50
                                             transition-all duration-300 origin-top-right z-50
@@ -233,8 +233,8 @@ function Header() {
                                         </div>
                                     </div>
 
-                                    {/* Account Center */}
-                                    <div className="relative" ref={dropdownRef}>
+                                    {/* Account Center (Desktop Only) */}
+                                    <div className="hidden lg:block relative" ref={dropdownRef}>
                                         <button
                                             onClick={() => setIsAccountOpen(!isAccountOpen)}
                                             className={`flex items-center gap-3 px-3 py-2 rounded-2xl transition-all duration-300 border ${isAccountOpen

@@ -236,7 +236,7 @@ function LandingPage() {
                   <span className="text-transparent bg-gradient-to-r from-accent via-blue-400 to-indigo-400 bg-clip-text">One Unified Hub</span>
                 </h1>
                 <p className="text-lg text-text-secondary max-w-lg leading-relaxed font-medium">
-                  Automatically sync your Steam, PlayStation, Xbox, and Epic Games libraries into one beautiful collection. Discover deals, track friends, and manage your backlog instantly.
+                  Automatically sync your Steam, PlayStation, Xbox, and Epic Games libraries into one beautiful collection. Track games, monitor live price drops, and manage your cross-platform wishlist in real-time.
                 </p>
                 <div className="flex flex-wrap gap-4 pt-4">
                   {user ? (
@@ -298,8 +298,8 @@ function LandingPage() {
                     ⚡
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-white uppercase mb-2">Deal Finder</h3>
-                    <p className="text-xs text-text-muted font-medium max-w-[180px] mx-auto">Never pay full price again with global price tracking.</p>
+                    <h3 className="text-2xl font-black text-white uppercase mb-2">Price Tracker</h3>
+                    <p className="text-xs text-text-muted font-medium max-w-[180px] mx-auto">Never pay full price again with live price tracking and wishlist alerts.</p>
                   </div>
                 </div>
               </div>
