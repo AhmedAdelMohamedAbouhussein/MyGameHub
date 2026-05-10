@@ -64,7 +64,7 @@ export const startAdminReportCron = () => {
 
             logger.info({ email: maskEmail(targetEmail) }, '[Cron] Admin Report sent successfully.');
         } catch (error) {
-            logger.error({ err: error }, '[Cron] Admin Report cron error');
+            logger.error({ message: error.message }, '[Cron] Admin Report cron error');
         }
     });
 };
@@ -106,7 +106,11 @@ export const startWishlistCron = () => {
                         priceMap[gamePrice.id] = gamePrice.deals || [];
                     });
                 } catch (err) {
-                    logger.error({ err, chunkIndex: i }, '[Cron] Batch price fetch failed');
+                    logger.error({ 
+                        message: err.message, 
+                        status: err.response?.status, 
+                        chunkIndex: i 
+                    }, '[Cron] Batch price fetch failed');
                 }
             }
 
@@ -195,13 +199,13 @@ export const startWishlistCron = () => {
                         });
                         logger.debug({ email: maskEmail(user.email), count: totalGames }, '[Cron] Consolidated price drop email sent');
                     } catch (mailErr) {
-                        logger.error({ err: mailErr, email: maskEmail(user.email) }, '[Cron] Failed to send consolidated price-drop email');
+                        logger.error({ message: mailErr.message, email: maskEmail(user.email) }, '[Cron] Failed to send consolidated price-drop email');
                     }
                 }
             }
             logger.info({ cron: 'wishlist' }, '[Cron] Daily wishlist price check completed.');
         } catch (error) {
-            logger.error({ err: error }, '[Cron] Wishlist cron error');
+            logger.error({ message: error.message }, '[Cron] Wishlist cron error');
         }
     });
 };
@@ -234,7 +238,7 @@ export const startPurgeCron = () => {
                         html: generateAccountPurgedEmail(user.name)
                     });
                 } catch (mailErr) {
-                    logger.error({ err: mailErr, email: maskEmail(user.email) }, '[Cron] Failed to send purge email');
+                    logger.error({ message: mailErr.message, email: maskEmail(user.email) }, '[Cron] Failed to send purge email');
                 }
 
                 // Use document.deleteOne() to trigger the friends-cleanup pre-hook
@@ -244,7 +248,7 @@ export const startPurgeCron = () => {
 
             logger.info({ cron: 'purge' }, '[Cron] 30-day purge completed.');
         } catch (error) {
-            logger.error({ err: error }, '[Cron] Purge cron error');
+            logger.error({ message: error.message }, '[Cron] Purge cron error');
         }
     });
 };
@@ -345,7 +349,11 @@ export const startTokenRefreshCron = () => {
                             }
                         } else {
                             // Transient error (network, timeout) — don't invalidate the token
-                            logger.error({ err: err, accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] PSN transient error');
+                            logger.error({ 
+                                message: err.message, 
+                                status: err.response?.status,
+                                accountId: hashId(account.accountId) 
+                            }, '[Cron:TokenRefresh] PSN transient error');
                         }
                     }
 
@@ -414,7 +422,11 @@ export const startTokenRefreshCron = () => {
                                 logger.error({ err: mailErr, email: maskEmail(user.email) }, '[Cron:TokenRefresh] Xbox expiry email failed');
                             }
                         } else {
-                            logger.error({ err: err, accountId: hashId(account.accountId) }, '[Cron:TokenRefresh] Xbox transient error');
+                            logger.error({ 
+                                message: err.message, 
+                                status: err.response?.status,
+                                accountId: hashId(account.accountId) 
+                            }, '[Cron:TokenRefresh] Xbox transient error');
                         }
                     }
 
@@ -429,7 +441,7 @@ export const startTokenRefreshCron = () => {
 
             logger.info({ cron: 'tokenRefresh' }, '[Cron:TokenRefresh] Token rotation complete.');
         } catch (error) {
-            logger.error({ err: error }, '[Cron:TokenRefresh] Fatal cron error');
+            logger.error({ message: error.message }, '[Cron:TokenRefresh] Fatal cron error');
         }
     });
 };

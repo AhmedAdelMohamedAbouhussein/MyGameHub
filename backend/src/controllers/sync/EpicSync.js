@@ -73,8 +73,11 @@ export async function epicReturn(req, res) {
       lastSync: new Date()
     };
     const accIdx = epicAccounts.findIndex(acc => acc.accountId === epicId);
+    const existingAcc = accIdx > -1 ? epicAccounts[accIdx] : null;
+
     if (accIdx > -1) epicAccounts[accIdx] = { ...epicAccounts[accIdx], ...accountData };
     else epicAccounts.push(accountData);
+
     linkedAccounts.set("Epic", epicAccounts);
     dbUser.linkedAccounts = linkedAccounts;
     dbUser.markModified("linkedAccounts");

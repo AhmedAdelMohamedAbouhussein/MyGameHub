@@ -38,7 +38,11 @@ export const refreshOwnedGames = async (req, res, next) => {
                     const gamesWithAchievements = await getUserAchievements(parseInt(account.accountId), ownedGames);
                     await updateNormalizedGames(userId, gamesWithAchievements, account, "Steam");
                 } catch (error) {
-                    logger.error({ err: error, accountId: hashId(account.accountId) }, 'Steam refresh error');
+                    logger.error({ 
+                        message: error.message, 
+                        status: error.response?.status,
+                        accountId: hashId(account.accountId) 
+                    }, 'Steam refresh error');
                     errors.push({ platform: 'Steam', account: account.accountId, message: error.message });
                 }
             })());
@@ -89,7 +93,11 @@ export const refreshOwnedGames = async (req, res, next) => {
                         hasChanges = true;
                         errors.push({ platform: 'Xbox', account: account.accountId, requiresReauth: true });
                     } else {
-                        logger.error({ err: error, accountId: hashId(account.accountId) }, 'Xbox refresh error');
+                        logger.error({ 
+                            message: error.message, 
+                            status: error.response?.status,
+                            accountId: hashId(account.accountId) 
+                        }, 'Xbox refresh error');
                         errors.push({ platform: 'Xbox', account: account.accountId, message: error.message });
                     }
                 }
@@ -119,7 +127,11 @@ export const refreshOwnedGames = async (req, res, next) => {
                         hasChanges = true;
                         errors.push({ platform: 'PSN', account: account.accountId, requiresReauth: true });
                     } else {
-                        logger.error({ err: error, accountId: hashId(account.accountId) }, 'PSN refresh error');
+                        logger.error({ 
+                            message: error.message, 
+                            status: error.response?.status,
+                            accountId: hashId(account.accountId) 
+                        }, 'PSN refresh error');
                         errors.push({ platform: 'PSN', account: account.accountId, message: error.message });
                     }
                 }

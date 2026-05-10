@@ -301,7 +301,7 @@ const GamePage = () => {
                                                     <div className="space-y-1">
                                                         <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Historic Low</span>
                                                         <p className="text-base sm:text-lg font-black text-success">
-                                                            {Number(game.historyLow.all) <= 0 ? "FREE" : `$${Number(game.historyLow.all).toFixed(2)}`}
+                                                            {(Number(game.deals[0].price) <= 0 || Number(game.historyLow.all) <= 0) ? "FREE" : `$${Number(game.historyLow.all).toFixed(2)}`}
                                                         </p>
                                                     </div>
                                                     <div className="space-y-1">

@@ -321,10 +321,30 @@ export const getOneGameDetails = async (req, res, next) => {
                         if (pricesRes.data?.length > 0) {
                             const priceData = pricesRes.data[0];
 
-                            // 📉 History Low
+                            // 📉 Smart History Low (Paid)
                             if (priceData.historyLow) {
+                                let hLow = priceData.historyLow.all?.amount ?? null;
+                                
+                                // If the absolute low is FREE, try to find the lowest PAID price
+                                if (hLow === 0) {
+                                    try {
+                                        const hRes = await axiosClient.get("https://api.isthereanydeal.com/games/history/v2", {
+                                            params: { key: ITAD_API_KEY, id: selectedGame.id, country: "US" }
+                                        });
+                                        const paidPrices = (hRes.data || [])
+                                            .map(e => e.deal?.price?.amount)
+                                            .filter(p => p != null && p > 0);
+                                        
+                                        if (paidPrices.length > 0) {
+                                            hLow = Math.min(...paidPrices);
+                                        }
+                                    } catch (err) {
+                                        logger.warn('Failed to fetch paid history low fallback');
+                                    }
+                                }
+
                                 gameProfile.historyLow = {
-                                    all: priceData.historyLow.all?.amount ?? null,
+                                    all: hLow,
                                     y1: priceData.historyLow.y1?.amount ?? null,
                                     m3: priceData.historyLow.m3?.amount ?? null,
                                 };
@@ -344,7 +364,11 @@ export const getOneGameDetails = async (req, res, next) => {
                 }
             }
         } catch (itadErr) {
-            logger.error({ err: itadErr }, 'ITAD fetch failed');
+            logger.error({ 
+                message: itadErr.message, 
+                status: itadErr.response?.status, 
+                details: itadErr.response?.data 
+            }, 'ITAD fetch failed');
         }
 
         // ── Store full profile in cache ───────────────────────────────────────
@@ -473,7 +497,11 @@ export const getGameStores = async (req, res) => {
         return res.status(200).json({ stores: [] });
 
     } catch (error) {
-        logger.error({ err: error, itadId }, 'ITAD stores fetch failed');
+        logger.error({ 
+            message: error.message, 
+            status: error.response?.status, 
+            itadId 
+        }, 'ITAD stores fetch failed');
         return res.status(200).json({ stores: [] });
     }
 };
@@ -509,22 +537,19 @@ export const getPriceHistory = async (req, res, next) => {
                 }
             }
         );
-        console.log("historyRes.data", historyRes.data);
 
-        // ITAD history/v2 returns an array of deal events
         const raw = historyRes.data || [];
-
         const allPoints = [];
+
         for (const entry of raw) {
             const shopName = entry.shop?.name || "Unknown";
             const deal = entry.deal || {};
             const timestampStr = entry.timestamp;
 
             if (timestampStr && deal.price?.amount != null) {
-                // ITAD returns ISO string timestamps like "2026-04-24T09:09:16+02:00"
                 const ms = new Date(timestampStr).getTime();
                 allPoints.push({
-                    timestamp: ms, // Store as ms
+                    timestamp: ms,
                     price: deal.price.amount,
                     store: shopName,
                     regular: deal.regular?.amount ?? null
@@ -555,7 +580,11 @@ export const getPriceHistory = async (req, res, next) => {
         return res.status(200).json(result);
 
     } catch (error) {
-        logger.error({ err: error, itadId }, 'ITAD price history fetch failed');
+        logger.error({ 
+            message: error.message, 
+            status: error.response?.status, 
+            itadId 
+        }, 'ITAD price history fetch failed');
         return res.status(200).json({ history: [], series: {} });
     }
 };

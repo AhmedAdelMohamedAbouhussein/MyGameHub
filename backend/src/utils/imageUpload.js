@@ -71,7 +71,7 @@ export const processAndUploadImage = async (fileBuffer, folder) => {
         });
 
     } catch (error) {
-        logger.error({ err: error }, 'processAndUploadImage error');
+        logger.error({ message: error.message, folder }, 'processAndUploadImage error');
         throw error;
     }
 };
@@ -140,7 +140,7 @@ export const uploadImageFromUrl = async (url, folder, publicId = null) => {
         });
 
     } catch (err) {
-        logger.error({ err, folder }, 'uploadImageFromUrl error');
+        logger.error({ message: err.message, status: err.response?.status, folder }, 'uploadImageFromUrl error');
         return null;
     }
 };
@@ -160,6 +160,6 @@ export const deleteImageByUrl = async (url) => {
 
         await cloudinary.uploader.destroy(publicId);
     } catch (err) {
-        logger.error({ err }, 'deleteImageByUrl error');
+        logger.error({ message: err.message }, 'deleteImageByUrl error');
     }
 };

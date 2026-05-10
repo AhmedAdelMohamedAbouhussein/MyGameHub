@@ -43,17 +43,11 @@ function CommunityPage() {
 
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 <Header />
-                <BackButton />
                 <main className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-8 lg:p-12 relative z-10">
                     <div className="max-w-7xl mx-auto">
 
-                        <div className="flex items-center lg:hidden mb-4">
-                            <button
-                                onClick={() => setMobileAsideOpen(true)}
-                                className="p-2 rounded-xl text-text-muted hover:text-text-primary hover:bg-midnight-600 transition-colors"
-                            >
-                                <FaBars size={20} />
-                            </button>
+                        <div className="flex items-center mb-4">
+                            <BackButton variant="relative" />
                         </div>
 
                         <div className="mb-10 text-center">

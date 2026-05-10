@@ -29,7 +29,10 @@ async function fetchBatchPrices(itadIds, country = "US") {
         }
         return priceMap;
     } catch (err) {
-        logger.error({ err }, '[Wishlist] Batch ITAD fetch failed');
+        logger.error({ 
+            message: err.message, 
+            status: err.response?.status 
+        }, '[Wishlist] Batch ITAD fetch failed');
         return {};
     }
 }
@@ -66,7 +69,11 @@ async function fetchCurrentPrice(gameName, targetStores = [], itadId = null) {
             };
         }
     } catch (err) {
-        logger.error({ err, gameName }, '[Wishlist] ITAD fetch failed');
+        logger.error({ 
+            message: err.message, 
+            status: err.response?.status, 
+            gameName 
+        }, '[Wishlist] ITAD fetch failed');
     }
     return null;
 }

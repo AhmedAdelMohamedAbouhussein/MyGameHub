@@ -57,7 +57,11 @@ export async function getGameTrailer(gameName) {
         return result;
     }
     catch (err) {
-        logger.error({ err }, '[YouTube] Trailer fetch failed');
+        logger.error({ 
+            message: err.message, 
+            status: err.response?.status, 
+            details: err.response?.data?.error?.message || err.response?.data 
+        }, '[YouTube] Trailer fetch failed');
         return null;
     }
 }
