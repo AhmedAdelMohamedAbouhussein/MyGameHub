@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /library
+Disallow: /settings
+Disallow: /managefriends
+Disallow: /ownedgamedetails
+Disallow: /wishlist
+Disallow: /manage-profile
+Disallow: /set-password
+Disallow: /verify
+Disallow: /resetpassword
+Disallow: /library/sync/
+
+Sitemap: https://my-gamehub.com/sitemap.xml
