@@ -80,30 +80,35 @@ export async function getXboxFriends(xuid, userHash, xstsToken, existingFriends 
         const detailed = await Promise.all(
             friends.map(friend =>
                 friendsLimit(async () => {
-                    const profile = await getXboxProfile(friend.externalId, userHash, xstsToken);
-                    if (!profile) return null;
+                    try {
+                        const profile = await getXboxProfile(friend.externalId, userHash, xstsToken);
+                        if (!profile) return null;
 
-                    const freshAvatarUrl = profile.avatar;
+                        const freshAvatarUrl = profile.avatar;
 
-                    // Find existing friend data
-                    const existingFriend = existingFriends.find(f => f.externalId === friend.externalId);
-                    let avatarUrl = existingFriend?.avatar;
-                    let originalAvatarUrl = existingFriend?.originalAvatarUrl;
+                        // Find existing friend data
+                        const existingFriend = existingFriends.find(f => f.externalId === friend.externalId);
+                        let avatarUrl = existingFriend?.avatar;
+                        let originalAvatarUrl = existingFriend?.originalAvatarUrl;
 
-                    if (freshAvatarUrl && freshAvatarUrl !== originalAvatarUrl) {
-                        const result = await uploadImageFromUrl(freshAvatarUrl, "avatars", `xbox_friend_${friend.externalId}`);
-                        if (result) {
-                            avatarUrl = result.secure_url;
-                            originalAvatarUrl = freshAvatarUrl;
+                        if (freshAvatarUrl && freshAvatarUrl !== originalAvatarUrl) {
+                            const result = await uploadImageFromUrl(freshAvatarUrl, "avatars", `xbox_friend_${friend.externalId}`);
+                            if (result) {
+                                avatarUrl = result.secure_url;
+                                originalAvatarUrl = freshAvatarUrl;
+                            }
                         }
-                    }
 
-                    return {
-                        ...friend,
-                        displayName: profile.gamertag,
-                        avatar: avatarUrl,
-                        originalAvatarUrl: originalAvatarUrl
-                    };
+                        return {
+                            ...friend,
+                            displayName: profile.gamertag,
+                            avatar: avatarUrl,
+                            originalAvatarUrl: originalAvatarUrl
+                        };
+                    } catch (friendErr) {
+                        logger.warn({ xuid: hashId(friend.externalId), err: friendErr.message }, 'Xbox friend processing failed, skipping');
+                        return null;
+                    }
                 })
             )
         );
@@ -234,22 +239,27 @@ export async function enrichOwnedGamesWithAchievements(xuid, games, userHash, xs
     return await Promise.all(
         games.map(game =>
             achievementLimit(async () => {
-                const achievements = await getXboxAchievements(
-                    xuid,
-                    game.gameId,
-                    userHash,
-                    xstsToken
-                );
+                try {
+                    const achievements = await getXboxAchievements(
+                        xuid,
+                        game.gameId,
+                        userHash,
+                        xstsToken
+                    );
 
-                const completed = achievements.filter(a => a.unlocked).length;
-                const progress = achievements.length
-                    ? Number(((completed / achievements.length) * 100).toFixed(2))
-                    : 0;
+                    const completed = achievements.filter(a => a.unlocked).length;
+                    const progress = achievements.length
+                        ? Number(((completed / achievements.length) * 100).toFixed(2))
+                        : 0;
 
-                // Get RAWG cover image (rate-limited)
-                const coverImage = await rawgLimit(() => getRawgGameCover(game.gameName));
+                    // Get RAWG cover image (rate-limited)
+                    const coverImage = await rawgLimit(() => getRawgGameCover(game.gameName));
 
-                return { ...game, achievements, progress, coverImage };
+                    return { ...game, achievements, progress, coverImage };
+                } catch (gameErr) {
+                    logger.warn({ gameId: game.gameId, gameName: game.gameName, err: gameErr.message }, 'Xbox game enrichment failed, skipping achievements');
+                    return { ...game, achievements: [], progress: 0, coverImage: null };
+                }
             })
         )
     );

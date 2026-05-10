@@ -149,14 +149,23 @@ export async function xboxReturn(req, res) {
         linkedAccounts.set("Xbox", xboxAccounts);
         dbUser.linkedAccounts = linkedAccounts;
 
-        // 2. Parallelize API calls for maximum speed
+        // 2. Parallelize API calls — each is individually guarded so one failure won't abort the others
         const [friendsList, noAchGames] = await Promise.all([
-            getXboxFriends(xuid, userHash, xstsToken, existingAcc?.friends || []),
-            getXboxOwnedGames(xuid, userHash, xstsToken)
+            getXboxFriends(xuid, userHash, xstsToken, existingAcc?.friends || []).catch(err => {
+                logger.error({ xuid: hashId(xuid), err: err.message }, 'Xbox: getXboxFriends failed, skipping friends sync');
+                return [];
+            }),
+            getXboxOwnedGames(xuid, userHash, xstsToken).catch(err => {
+                logger.error({ xuid: hashId(xuid), err: err.message }, 'Xbox: getXboxOwnedGames failed, skipping games sync');
+                return [];
+            })
         ]);
 
         // Achievements enrichment still depends on noAchGames
-        const games = await enrichOwnedGamesWithAchievements(xuid, noAchGames, userHash, xstsToken);
+        const games = await enrichOwnedGamesWithAchievements(xuid, noAchGames, userHash, xstsToken).catch(err => {
+            logger.error({ xuid: hashId(xuid), err: err.message }, 'Xbox: enrichOwnedGamesWithAchievements failed, using games without achievements');
+            return noAchGames.map(g => ({ ...g, achievements: [], progress: 0, coverImage: null }));
+        });
 
         // 3. Fetch all existing games for this user/platform once
         const existingGames = await UserGame.find({ userId, platform: "Xbox" });

@@ -140,7 +140,7 @@ export const uploadImageFromUrl = async (url, folder, publicId = null) => {
         });
 
     } catch (err) {
-        logger.error({ message: err.message, status: err.response?.status, folder }, 'uploadImageFromUrl error');
+        logger.error({ message: err.message, status: err.response?.status, folder, url }, 'uploadImageFromUrl error');
         return null;
     }
 };
@@ -160,6 +160,6 @@ export const deleteImageByUrl = async (url) => {
 
         await cloudinary.uploader.destroy(publicId);
     } catch (err) {
-        logger.error({ message: err.message }, 'deleteImageByUrl error');
+        logger.error({ message: err.message, url }, 'deleteImageByUrl error');
     }
 };

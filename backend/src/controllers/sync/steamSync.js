@@ -9,6 +9,7 @@ import logger from "../../utils/logger.js";
 
 import { getOwnedGames, getUserAchievements, getUserFriendList } from '../allSteamInfo.js'
 import { uploadImageFromUrl } from "../../utils/imageUpload.js";
+import { hashId } from "../../utils/logSanitize.js";
 
 const APP_FRONTEND_URL = config.frontendUrl;
 const APP_BACKEND_URL = config.appUrl;
@@ -74,7 +75,7 @@ export const syncWithSteam = async (req, res, next) => {
         })(req, res, next);
     }
     catch (error) {
-        error.logContext = { userId: hashId(userId), platform: "Steam" };
+        error.logContext = { platform: "Steam" };
         next(error);
     }
 }
@@ -136,13 +137,22 @@ export const steamReturn = (req, res, next) => {
             linkedAccounts.set("Steam", steamAccounts);
             dbUser.linkedAccounts = linkedAccounts;
 
-            // 1. Parallelize API calls for maximum speed
+            // 1. Parallelize API calls — each is individually guarded so one failure won't abort the others
             const [noAchGames, friendsList] = await Promise.all([
-                getOwnedGames(steamId),
-                getUserFriendList(steamId, existingAcc?.friends || [])
+                getOwnedGames(steamId).catch(err => {
+                    logger.error({ steamId: hashId(steamId), err: err.message }, 'Steam: getOwnedGames failed, skipping games sync');
+                    return [];
+                }),
+                getUserFriendList(steamId, existingAcc?.friends || []).catch(err => {
+                    logger.error({ steamId: hashId(steamId), err: err.message }, 'Steam: getUserFriendList failed, skipping friends sync');
+                    return [];
+                })
             ]);
 
-            const games = await getUserAchievements(steamId, noAchGames);
+            const games = await getUserAchievements(steamId, noAchGames).catch(err => {
+                logger.error({ steamId: hashId(steamId), err: err.message }, 'Steam: getUserAchievements failed, using games without achievements');
+                return noAchGames.map(g => ({ ...g, achievements: [], progress: 0 }));
+            });
 
             // 2. Fetch all existing games for this user/platform once
             const existingGames = await UserGame.find({ userId, platform: "Steam" });

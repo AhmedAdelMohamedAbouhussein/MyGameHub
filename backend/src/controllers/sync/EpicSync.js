@@ -83,7 +83,10 @@ export async function epicReturn(req, res) {
     dbUser.markModified("linkedAccounts");
 
     // 4. Process Friends with Diff-based Sync (Smart Update)
-    const friendsList = await getUserFriendList(eosAccessToken, epicId, existingAcc?.friends || []);
+    const friendsList = await getUserFriendList(eosAccessToken, epicId, existingAcc?.friends || []).catch(err => {
+      logger.error({ epicId: hashId(epicId), err: err.message }, 'Epic: getUserFriendList failed, skipping friends sync');
+      return [];
+    });
     const existingFriends = await Friendship.find({ userId, source: "Epic", linkedAccountId: epicId });
     const existingFriendsMap = new Map(existingFriends.map(f => [f.externalId, f]));
 

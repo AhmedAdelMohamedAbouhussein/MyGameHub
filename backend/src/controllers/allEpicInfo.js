@@ -47,14 +47,19 @@ export async function getUserFriendList(accessToken, accountId, existingFriends 
 
         const profileRequests = chunks.map(chunk =>
             friendsLimit(async () => {
-                const query = chunk.map(id => `accountId=${id}`).join("&");
-                const res = await axiosClient.get(
-                    `https://api.epicgames.dev/epic/id/v2/accounts?${query}`,
-                    {
-                        headers: { Authorization: `Bearer ${accessToken}` }
-                    }
-                );
-                return res.data || [];
+                try {
+                    const query = chunk.map(id => `accountId=${id}`).join("&");
+                    const res = await axiosClient.get(
+                        `https://api.epicgames.dev/epic/id/v2/accounts?${query}`,
+                        {
+                            headers: { Authorization: `Bearer ${accessToken}` }
+                        }
+                    );
+                    return res.data || [];
+                } catch (err) {
+                    logger.warn({ accountId: hashId(accountId), err: err.message }, 'Epic: Failed to fetch friend profiles chunk, skipping batch');
+                    return [];
+                }
             })
         );
 

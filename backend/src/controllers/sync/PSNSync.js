@@ -65,10 +65,16 @@ export const PSNloginWithNpsso = async (req, res, next) => {
         linkedAccounts.set("PSN", psnAccounts);
         dbUser.linkedAccounts = linkedAccounts;
 
-        // 2. Parallelize API calls for maximum speed
+        // 2. Parallelize API calls — each is individually guarded so one failure won't abort the others
         const [friendsList, games] = await Promise.all([
-            getFriendList(authorization, existingAcc?.friends || []),
-            getAllOwnedGames(authorization)
+            getFriendList(authorization, existingAcc?.friends || []).catch(err => {
+                logger.error({ PSNId: hashId(PSNId), err: err.message }, 'PSN: getFriendList failed, skipping friends sync');
+                return [];
+            }),
+            getAllOwnedGames(authorization).catch(err => {
+                logger.error({ PSNId: hashId(PSNId), err: err.message }, 'PSN: getAllOwnedGames failed, skipping games sync');
+                return [];
+            })
         ]);
         
         // 3. Fetch all existing games for this user/platform once

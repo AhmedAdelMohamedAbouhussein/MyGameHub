@@ -143,35 +143,40 @@ export async function getUserFriendList(steamId, existingFriends = []) {
 
         const formattedFriends = await Promise.all(allPlayers.map((p) =>
             friendsLimit(async () => {
-                const freshAvatarUrl = p.avatarfull;
+                try {
+                    const freshAvatarUrl = p.avatarfull;
 
-                // Find existing friend data
-                const existingFriend = existingFriends.find(f => f.externalId === p.steamid);
-                let avatarUrl = existingFriend?.avatar;
-                let originalAvatarUrl = existingFriend?.originalAvatarUrl;
+                    // Find existing friend data
+                    const existingFriend = existingFriends.find(f => f.externalId === p.steamid);
+                    let avatarUrl = existingFriend?.avatar;
+                    let originalAvatarUrl = existingFriend?.originalAvatarUrl;
 
-                if (freshAvatarUrl && freshAvatarUrl !== originalAvatarUrl) {
-                    const result = await uploadImageFromUrl(freshAvatarUrl, "avatars", `steam_friend_${p.steamid}`);
-                    if (result) {
-                        avatarUrl = result.secure_url;
-                        originalAvatarUrl = freshAvatarUrl;
+                    if (freshAvatarUrl && freshAvatarUrl !== originalAvatarUrl) {
+                        const result = await uploadImageFromUrl(freshAvatarUrl, "avatars", `steam_friend_${p.steamid}`);
+                        if (result) {
+                            avatarUrl = result.secure_url;
+                            originalAvatarUrl = freshAvatarUrl;
+                        }
                     }
-                }
 
-                return {
-                    externalId: p.steamid,
-                    displayName: p.personaname,
-                    profileUrl: p.profileurl,
-                    avatar: avatarUrl,
-                    originalAvatarUrl: originalAvatarUrl,
-                    friendsSince: friendsMap.has(p.steamid)
-                        ? new Date(Number(friendsMap.get(p.steamid)) * 1000)
-                        : null,
-                };
+                    return {
+                        externalId: p.steamid,
+                        displayName: p.personaname,
+                        profileUrl: p.profileurl,
+                        avatar: avatarUrl,
+                        originalAvatarUrl: originalAvatarUrl,
+                        friendsSince: friendsMap.has(p.steamid)
+                            ? new Date(Number(friendsMap.get(p.steamid)) * 1000)
+                            : null,
+                    };
+                } catch (friendErr) {
+                    logger.warn({ steamid: hashId(p.steamid), err: friendErr.message }, 'Steam friend processing failed, skipping');
+                    return null;
+                }
             })
         ));
 
-        return formattedFriends;
+        return formattedFriends.filter(f => f !== null);
     } catch (err) {
         logger.warn({ accountId: hashId(steamId), err }, 'Steam friend list fetch failed');
         return [];
