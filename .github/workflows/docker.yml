@@ -29,3 +29,18 @@ jobs:
           context: ./backend
           push: true
           tags: ahmedadelabouhussein/gamehub-backend:latest
+
+  deploy_backend:
+    needs: publish_backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd MyGameHub/backend
+            docker compose pull
+            docker compose up -d
