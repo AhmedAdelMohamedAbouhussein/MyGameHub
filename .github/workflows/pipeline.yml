@@ -76,13 +76,32 @@ jobs:
           push: true
           tags: ahmedadelabouhussein/gamehub-backend:latest
 
-  # ── Step 3: Deploy to EC2 ────────────────────────────────────────────────────
+  # ── Step 3: Deploy to EC2 (With Dynamic Whitelisting) ─────────────────────────
   deploy_backend:
     name: Deploy to EC2
     needs: publish_backend
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
+      - name: Get Runner IP
+        id: ip
+        run: echo "ipv4=$(curl -s https://api.ipify.org)" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Open Port 22 in Security Group
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-name "${{ secrets.AWS_SG_NAME }}" \
+            --protocol tcp \
+            --port 22 \
+            --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -93,3 +112,12 @@ jobs:
             cd MyGameHub/backend
             docker compose pull
             docker compose up -d
+
+      - name: Close Port 22 in Security Group
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-name "${{ secrets.AWS_SG_NAME }}" \
+            --protocol tcp \
+            --port 22 \
+            --cidr ${{ steps.ip.outputs.ipv4 }}/32
