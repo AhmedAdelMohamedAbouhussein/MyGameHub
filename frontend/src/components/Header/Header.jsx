@@ -177,10 +177,10 @@ function Header() {
 
                                         {/* Notifications Dropdown */}
                                         <div className={`
-                                            absolute right-0 top-full mt-3 w-[calc(100vw-2rem)] sm:w-80 p-2
+                                            fixed lg:absolute left-4 right-4 lg:left-auto lg:right-0 top-20 lg:top-full mt-3 lg:w-80 p-2
                                             bg-midnight-700/95 backdrop-blur-xl border border-midnight-500/30
                                             rounded-2xl shadow-2xl shadow-black/50
-                                            transition-all duration-300 origin-top-right z-50
+                                            transition-all duration-300 origin-top lg:origin-top-right z-50
                                             ${isNotificationsOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"}
                                         `}>
                                             <div className="px-3 py-2 border-b border-midnight-500/20 mb-1 flex items-center justify-between">
@@ -324,15 +324,17 @@ function Header() {
                                     Sign In
                                 </Link>
                             )}
+                            
+                            {/* Mobile Menu Toggle (closer to user actions) */}
+                            <button
+                                onClick={() => setIsMobileMenuOpen(true)}
+                                className="lg:hidden text-white p-2 hover:bg-midnight-600 rounded-lg transition-all active:scale-90"
+                            >
+                                <FaBars size={22} />
+                            </button>
                         </div>
 
-                        {/* Mobile Button */}
-                        <button
-                            onClick={() => setIsMobileMenuOpen(true)}
-                            className="lg:hidden text-white p-2 hover:bg-midnight-600 rounded-lg transition"
-                        >
-                            <FaBars size={22} />
-                        </button>
+
                     </div>
                 </div>
             </header>
