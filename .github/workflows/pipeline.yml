@@ -110,6 +110,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd MyGameHub/backend
+            git pull
             docker compose pull
             docker compose up -d
 
