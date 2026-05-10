@@ -1,0 +1,95 @@
+name: Main CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  # ── Step 1: Run Tests ────────────────────────────────────────────────────────
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm install
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm install
+        working-directory: backend
+      - run: npm test
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          SESSION_SECRET: test-secret
+          LOCAL_MONGO_URL: mongodb://localhost/test
+          PORT: 8080
+          APP_BACKEND_URL: http://localhost:8080
+          APP_FRONTEND_URL: http://localhost:5173
+          ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
+          IV_LENGTH: 16
+          BCRYPT_SALT_ROUNDS: 10
+          ALGORITHM: aes-256-cbc
+          LOG_SALT: test-log-salt-for-ci
+
+  # ── Step 2: Build & Publish (Only if Tests Pass) ─────────────────────────────
+  publish_backend:
+    name: Build & Push to DockerHub
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ahmedadelabouhussein/gamehub-backend:latest
+
+  # ── Step 3: Deploy to EC2 ────────────────────────────────────────────────────
+  deploy_backend:
+    name: Deploy to EC2
+    needs: publish_backend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd MyGameHub/backend
+            docker compose pull
+            docker compose up -d
