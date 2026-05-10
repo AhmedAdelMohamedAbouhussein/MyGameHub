@@ -12,6 +12,7 @@ import ManagePublicProfile from './pages/ManagePublicProfile/ManagePublicProfile
 import LoadingScreen from "./components/LoadingScreen/LoadingScreen";
 import CommunityPage from './pages/CommunityPage/CommunityPage.jsx';
 import SetPassword from './pages/SetPassword/SetPassword.jsx';
+import PrivacyPage from './pages/PrivacyPage/PrivacyPage';
 
 // Private pages (lazy loaded)
 const SyncWithSteam = lazy(() => import("./pages/SyncWithSteam/SyncWithSteam"));
@@ -50,6 +51,7 @@ function App() {
                 <Route path="/profile/:publicID" element={<ViewProfilePage />} />
                 <Route path="/community" element={<CommunityPage />} />
                 <Route path="/set-password" element={user && !user.hasPassword ? <SetPassword /> : <Navigate to="/" replace />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
 
                 {/* Auth pages */}
                 <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />

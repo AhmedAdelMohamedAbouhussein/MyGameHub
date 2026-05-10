@@ -4,7 +4,7 @@ import { FaGamepad, FaEnvelope, FaYoutube, FaCheck } from "react-icons/fa";
 function Footer() {
     const currentYear = new Date().getFullYear();
     const [copied, setCopied] = useState(false);
-    const email = "aa5913372@gmail.com";
+    const email = "ahmedadelabouhussein333@gmail.com";
 
     const handleEmailClick = (e) => {
         // Copy to clipboard

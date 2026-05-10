@@ -13,9 +13,29 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # ── Step 0: Detect Changes ───────────────────────────────────────────────────
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
   # ── Step 1: Run Tests ────────────────────────────────────────────────────────
   test-frontend:
     name: Frontend Tests
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +51,8 @@ jobs:
 
   test-backend:
     name: Backend Tests
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,12 +78,12 @@ jobs:
           ALGORITHM: aes-256-cbc
           LOG_SALT: test-log-salt-for-ci
 
-  # ── Step 2: Build & Publish (Only if Tests Pass) ─────────────────────────────
+  # ── Step 2: Build & Publish (Only if Backend changed and Tests Pass) ─────────
   publish_backend:
     name: Build & Push to DockerHub
-    needs: [test-backend, test-frontend]
+    needs: [changes, test-backend]
+    if: needs.changes.outputs.backend == 'true' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v4
       - name: Log in to DockerHub
@@ -76,12 +98,12 @@ jobs:
           push: true
           tags: ahmedadelabouhussein/gamehub-backend:latest
 
-  # ── Step 3: Deploy to EC2 (With Dynamic Whitelisting) ─────────────────────────
+  # ── Step 3: Deploy to EC2 (Only if Backend changed) ──────────────────────────
   deploy_backend:
     name: Deploy to EC2
-    needs: publish_backend
+    needs: [changes, publish_backend]
+    if: needs.changes.outputs.backend == 'true' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     steps:
       - name: Get Runner IP
         id: ip
@@ -114,7 +136,7 @@ jobs:
             docker compose down
             docker compose pull
             docker compose up -d
-            docker image prune -f
+            docker image prune -a -f
 
       - name: Close Port 22 in Security Group
         if: always()
