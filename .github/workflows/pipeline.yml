@@ -2,7 +2,7 @@ name: Main CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
     paths:
       - 'backend/**'
       - 'frontend/**'
@@ -61,7 +61,7 @@ jobs:
     name: Build & Push to DockerHub
     needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v4
       - name: Log in to DockerHub
@@ -81,7 +81,7 @@ jobs:
     name: Deploy to EC2
     needs: publish_backend
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     steps:
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@master
