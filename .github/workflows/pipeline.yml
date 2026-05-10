@@ -111,6 +111,7 @@ jobs:
           script: |
             cd MyGameHub/backend
             git pull
+            docker compose down
             docker compose pull
             docker compose up -d
 
