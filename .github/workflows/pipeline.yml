@@ -114,6 +114,7 @@ jobs:
             docker compose down
             docker compose pull
             docker compose up -d
+            docker image prune -f
 
       - name: Close Port 22 in Security Group
         if: always()
