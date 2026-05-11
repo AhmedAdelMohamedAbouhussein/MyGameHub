@@ -321,30 +321,10 @@ export const getOneGameDetails = async (req, res, next) => {
                         if (pricesRes.data?.length > 0) {
                             const priceData = pricesRes.data[0];
 
-                            // 📉 Smart History Low (Paid)
+                            // 📉 History Low
                             if (priceData.historyLow) {
-                                let hLow = priceData.historyLow.all?.amount ?? null;
-                                
-                                // If the absolute low is FREE, try to find the lowest PAID price
-                                if (hLow === 0) {
-                                    try {
-                                        const hRes = await axiosClient.get("https://api.isthereanydeal.com/games/history/v2", {
-                                            params: { key: ITAD_API_KEY, id: selectedGame.id, country: "US" }
-                                        });
-                                        const paidPrices = (hRes.data || [])
-                                            .map(e => e.deal?.price?.amount)
-                                            .filter(p => p != null && p > 0);
-                                        
-                                        if (paidPrices.length > 0) {
-                                            hLow = Math.min(...paidPrices);
-                                        }
-                                    } catch (err) {
-                                        logger.warn('Failed to fetch paid history low fallback');
-                                    }
-                                }
-
                                 gameProfile.historyLow = {
-                                    all: hLow,
+                                    all: priceData.historyLow.all?.amount ?? null,
                                     y1: priceData.historyLow.y1?.amount ?? null,
                                     m3: priceData.historyLow.m3?.amount ?? null,
                                 };
@@ -364,10 +344,10 @@ export const getOneGameDetails = async (req, res, next) => {
                 }
             }
         } catch (itadErr) {
-            logger.error({ 
-                message: itadErr.message, 
-                status: itadErr.response?.status, 
-                details: itadErr.response?.data 
+            logger.error({
+                message: itadErr.message,
+                status: itadErr.response?.status,
+                details: itadErr.response?.data
             }, 'ITAD fetch failed');
         }
 
@@ -497,10 +477,10 @@ export const getGameStores = async (req, res) => {
         return res.status(200).json({ stores: [] });
 
     } catch (error) {
-        logger.error({ 
-            message: error.message, 
-            status: error.response?.status, 
-            itadId 
+        logger.error({
+            message: error.message,
+            status: error.response?.status,
+            itadId
         }, 'ITAD stores fetch failed');
         return res.status(200).json({ stores: [] });
     }
@@ -580,10 +560,10 @@ export const getPriceHistory = async (req, res, next) => {
         return res.status(200).json(result);
 
     } catch (error) {
-        logger.error({ 
-            message: error.message, 
-            status: error.response?.status, 
-            itadId 
+        logger.error({
+            message: error.message,
+            status: error.response?.status,
+            itadId
         }, 'ITAD price history fetch failed');
         return res.status(200).json({ history: [], series: {} });
     }

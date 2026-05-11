@@ -31,9 +31,13 @@ export const addFriends = async (req, res, next) => {
       return next(error);
     }
 
-    // Check if friendship already exists
-    const existing = await Friendship.findOne({ userId: user._id, friendUserPublicID: friendPublicID, source: "User" });
-    if (existing) {
+    // Check if friendship already exists (both directions)
+    const [existingSender, existingReceiver] = await Promise.all([
+        Friendship.findOne({ userId: user._id, friendUserPublicID: friendPublicID, source: "User" }),
+        Friendship.findOne({ userId: friend._id, friendUserPublicID: publicID, source: "User" }),
+    ]);
+
+    if (existingSender || existingReceiver) {
         return res.status(400).json({ message: "Friendship already exists or request pending" });
     }
 
@@ -45,7 +49,8 @@ export const addFriends = async (req, res, next) => {
         avatar: friend.profilePicture,
         status: "pending",
         source: "User",
-        requestedByMe: true
+        requestedByMe: true,
+        externalId: undefined   // keep field absent so sparse index is skipped
     });
 
     // Create friendship for receiver
@@ -56,7 +61,8 @@ export const addFriends = async (req, res, next) => {
         avatar: user.profilePicture,
         status: "pending",
         source: "User",
-        requestedByMe: false
+        requestedByMe: false,
+        externalId: undefined   // keep field absent so sparse index is skipped
     });
 
     // Create notification for friend
@@ -70,6 +76,11 @@ export const addFriends = async (req, res, next) => {
 
     res.status(200).json({ message: "Friend request sent!" });
   } catch (err) {
+    // Gracefully handle duplicate key errors that slip past the pre-check
+    // (e.g. concurrent requests hitting the unique index)
+    if (err.code === 11000) {
+      return res.status(400).json({ message: "Friendship already exists or request pending" });
+    }
     next(err);
   }
 };

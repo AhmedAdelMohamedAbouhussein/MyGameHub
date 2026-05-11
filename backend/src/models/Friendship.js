@@ -49,7 +49,22 @@ const FriendshipSchema = new mongoose.Schema({
 
 // Compound index to quickly find friends on a specific platform
 FriendshipSchema.index({ userId: 1, source: 1 });
-// Compound index to avoid duplicate friendships from the same external account
-FriendshipSchema.index({ userId: 1, source: 1, externalId: 1 }, { unique: true, sparse: true });
+// Unique index to prevent duplicate platform friendships (Steam/Xbox/Epic/PSN only).
+// partialFilterExpression excludes "User"-source records so null externalId never collides.
+FriendshipSchema.index(
+    { userId: 1, source: 1, externalId: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { source: { $in: ['Steam', 'Xbox', 'Epic', 'PSN'] } }
+    }
+);
+// Unique index for on-platform (User-source) friendships keyed by publicID pair
+FriendshipSchema.index(
+    { userId: 1, friendUserPublicID: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { source: 'User' }
+    }
+);
 
 export default mongoose.model('Friendship', FriendshipSchema);

@@ -33,7 +33,7 @@ export const processAndUploadImage = async (fileBuffer, folder) => {
                 position: "centre"
             }).webp({
                 quality: AVATAR_QUALITY,
-                effort: 4,
+                effort: 2,   // effort 4→2: ~2x faster encoding, imperceptible quality loss
                 chromaSubsampling: "4:2:0"
             });
         } else {
@@ -43,30 +43,23 @@ export const processAndUploadImage = async (fileBuffer, folder) => {
                 withoutEnlargement: true
             }).webp({
                 quality: DEFAULT_QUALITY,
-                effort: 4,
+                effort: 2,   // effort 4→2: faster for large backgrounds
                 chromaSubsampling: "4:2:0"
             });
         }
 
         const processedBuffer = await sharpInstance.toBuffer();
 
+        // No Cloudinary transformation — Sharp has already compressed & resized.
+        // Adding a second transformation on a WebP buffer is redundant and slows uploads.
         return new Promise((resolve, reject) => {
-            const uploadOptions = {
-                folder,
-                resource_type: "image",
-                transformation: [
-                    { quality: "auto:eco", fetch_format: "auto" }
-                ]
-            };
-
             const stream = cloudinary.uploader.upload_stream(
-                uploadOptions,
+                { folder, resource_type: "image" },
                 (error, result) => {
                     if (result) resolve(result);
                     else reject(error);
                 }
             );
-
             stream.end(processedBuffer);
         });
 
@@ -117,9 +110,7 @@ export const uploadImageFromUrl = async (url, folder, publicId = null) => {
             const uploadOptions = {
                 folder,
                 resource_type: "image",
-                transformation: [
-                    { quality: "auto:eco", fetch_format: "auto" }
-                ]
+                // No Cloudinary transformation — Sharp handles all compression
             };
 
             if (publicId) {

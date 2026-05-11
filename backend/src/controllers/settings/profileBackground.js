@@ -17,10 +17,8 @@ export async function profileBackground(req, res, next) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Delete old background if exists
-        if (user.profileBackground) {
-            await deleteImageByUrl(user.profileBackground, "profile_backgrounds");
-        }
+        // Stash old URL before overwriting
+        const oldBackground = user.profileBackground;
 
         // Process and upload new background
         const result = await processAndUploadImage(req.file.buffer, "profile_backgrounds", {
@@ -34,6 +32,11 @@ export async function profileBackground(req, res, next) {
             { profileBackground: result.secure_url },
             { new: true }
         );
+
+        // Delete old background only after new one is safely uploaded
+        if (oldBackground) {
+            deleteImageByUrl(oldBackground, "profile_backgrounds").catch(() => {});
+        }
 
         res.json({
             message: "Profile background uploaded successfully",

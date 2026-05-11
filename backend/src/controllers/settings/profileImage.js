@@ -18,10 +18,8 @@ export async function profileImage(req, res, next) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Delete old picture if exists
-        if (user.profilePicture) {
-            await deleteImageByUrl(user.profilePicture, "avatars");
-        }
+        // Delete old picture in the background — don't block the upload
+        const oldPicture = user.profilePicture;
 
         // Process and upload new image
         const result = await processAndUploadImage(req.file.buffer, "avatars", {
@@ -36,6 +34,11 @@ export async function profileImage(req, res, next) {
             { profilePicture: result.secure_url },
             { new: true }
         );
+
+        // Delete old picture only after new one is safely uploaded
+        if (oldPicture) {
+            deleteImageByUrl(oldPicture, "avatars").catch(() => {});
+        }
 
         res.json({
             message: "Profile image uploaded successfully",
