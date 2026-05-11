@@ -10,6 +10,7 @@ import Footer from "../../components/Footer/Footer";
 import LoadingScreen from "../../components/LoadingScreen/LoadingScreen";
 import AuthContext from "../../contexts/AuthContext.jsx";
 import getCroppedImg from "../../utils/cropImage";
+import { compressImage } from "../../utils/compressImage.js";
 
 import { FaImage, FaCheck, FaGamepad, FaLock, FaGlobe, FaUser, FaMusic, FaTrophy } from "react-icons/fa";
 import { SiSpotify } from "react-icons/si";
@@ -115,10 +116,19 @@ function ManagePublicProfile() {
         }
     };
 
-    const handleBgChange = (e) => {
+    const handleBgChange = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            setBgPreview(URL.createObjectURL(file));
+        if (!file) return;
+
+        // Show original preview immediately for responsiveness
+        setBgPreview(URL.createObjectURL(file));
+
+        try {
+            // Compress to max 1920×1080 JPEG before upload (~200-400 KB vs 4-5 MB raw)
+            const compressed = await compressImage(file, 1920, 1080, 0.82);
+            setBgFile(compressed);
+        } catch {
+            // Fallback to raw file if compression fails
             setBgFile(file);
         }
     };
@@ -149,7 +159,8 @@ function ManagePublicProfile() {
             let updatedBg = profileBackground;
             if (bgFile) {
                 const formData = new FormData();
-                formData.append("profileBackground", bgFile);
+                // bgFile is already a compressed Blob from handleBgChange
+                formData.append("profileBackground", bgFile, "background.jpg");
                 const res = await apiClient.post(`/setting/profileBackground`, formData, {
                     headers: { "Content-Type": "multipart/form-data" }
                 });
