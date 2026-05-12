@@ -100,6 +100,8 @@ function LandingPage() {
       <Header />
 
       <main className="flex-1">
+        <h1 className="sr-only">My GameHub — Track Games, Achievements & Live Price Drops</h1>
+
 
         {/* HERO SECTION - MODERN CAROUSEL */}
         <section className="relative pt-10 pb-20 overflow-hidden">
