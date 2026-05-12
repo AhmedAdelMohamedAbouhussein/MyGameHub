@@ -186,26 +186,6 @@ MyGameHub/
 All endpoints are documented with Swagger.
 Access at `/swagger` on the deployed backend or locally at `http://localhost:8080/swagger`.
 
----
-
-## 🖼️ Screenshots
-
-### Landing Page
-![Landing Page](https://res.cloudinary.com/dvbmaonhc/image/upload/v1777400760/screenshots/landigpage1.webp)
-![Landing Page 2](https://res.cloudinary.com/dvbmaonhc/image/upload/v1777400761/screenshots/landigpage2.webp)
-
-### Login & Signup
-![Login](https://res.cloudinary.com/dvbmaonhc/image/upload/v1777400762/screenshots/login.webp)
-![Signup](https://res.cloudinary.com/dvbmaonhc/image/upload/v1777400765/screenshots/signup.webp)
-
-### Game Library
-![Library](https://res.cloudinary.com/dvbmaonhc/image/upload/v1777400758/screenshots/game.webp)
-
-### Achievement Page
-![Achievements](https://res.cloudinary.com/dvbmaonhc/image/upload/v1777400756/screenshots/Achievment.webp)
-
-### Settings
-![Settings](https://res.cloudinary.com/dvbmaonhc/image/upload/v1777400763/screenshots/settings.webp)
 
 ### API Docs (Swagger)
 ![Swagger](https://res.cloudinary.com/dvbmaonhc/image/upload/v1777400766/screenshots/swagger.webp)
