@@ -215,7 +215,8 @@ function ViewProfilePage() {
                                         ))}
                                     </div>
                                 </h1>
-                                {(!allowPublicFriendRequests && friendshipStatus !== "accepted" && publicID !== currentUser?.publicID) ? null : (
+                                {/* Show @handle only if: friend requests allowed, already friends, or viewing own profile */}
+                                {(allowPublicFriendRequests || friendshipStatus === "accepted" || data.publicID === currentUser?.publicID) && (
                                     <p className="text-accent font-bold mt-1 tracking-widest text-sm uppercase">@{publicID}</p>
                                 )}
                             </div>

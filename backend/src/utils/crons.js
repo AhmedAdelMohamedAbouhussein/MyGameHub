@@ -37,10 +37,11 @@ export const startAdminReportCron = () => {
             const deletedUsers = await User.countDocuments({ isDeleted: true });
             const verifiedUsers = await User.countDocuments({ isVerified: true });
 
-            const steamUsers = await User.countDocuments({ 'steam.id': { $exists: true } });
-            const epicUsers = await User.countDocuments({ 'epic.id': { $exists: true } });
-            const psnUsers = await User.countDocuments({ 'psn.id': { $exists: true } });
-            const xboxUsers = await User.countDocuments({ 'xbox.id': { $exists: true } });
+            // linkedAccounts is a Mongoose Map — keys are the platform names (Steam, PSN, Xbox, Epic)
+            const steamUsers = await User.countDocuments({ 'linkedAccounts.Steam': { $exists: true, $not: { $size: 0 } } });
+            const epicUsers  = await User.countDocuments({ 'linkedAccounts.Epic':  { $exists: true, $not: { $size: 0 } } });
+            const psnUsers   = await User.countDocuments({ 'linkedAccounts.PSN':   { $exists: true, $not: { $size: 0 } } });
+            const xboxUsers  = await User.countDocuments({ 'linkedAccounts.Xbox':  { $exists: true, $not: { $size: 0 } } });
 
             const metrics = {
                 totalUsers,
@@ -270,7 +271,7 @@ export const startTokenRefreshCron = () => {
     cron.schedule('0 3 * * *', async () => {
         logger.info({ cron: 'tokenRefresh' }, '[Cron:TokenRefresh] Starting proactive token rotation...');
 
-        const APP_URL = config.appFrontendUrl || 'http://localhost:5173';
+        const APP_URL = config.frontendUrl || 'http://localhost:5173';
         const CLIENT_ID = config.azure.clientId;
         const CLIENT_SECRET = config.azure.clientSecret;
         const REDIRECT_URI = config.xboxRedirectURL;

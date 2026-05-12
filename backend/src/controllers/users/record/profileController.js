@@ -115,9 +115,9 @@ export const getPublicProfile = async (req, res, next) => {
             profile.totalGames = allGames.length;
             profile.totalHours = allGames.reduce((acc, g) => acc + g.hoursPlayed, 0);
 
-            // Most played games (by hours, top 6)
+            // Most played games: sort by hours first, fall back to progress if hours are tied (e.g. all 0)
             profile.mostPlayedGames = [...allGames]
-                .sort((a, b) => b.hoursPlayed - a.hoursPlayed)
+                .sort((a, b) => b.hoursPlayed - a.hoursPlayed || b.progress - a.progress)
                 .slice(0, 6);
 
             // 100% completed games — return ALL of them
@@ -140,7 +140,17 @@ export const getPublicProfile = async (req, res, next) => {
             }
         }
 
+        // Security: strip publicID from the response if the user has disabled friend requests
+        // and the viewer is neither a friend nor the profile owner.
+        // Use profile.allowPublicFriendRequests (normalized via !== false on line 42) NOT the raw
+        // targetUser field, which can be `undefined` on older accounts — !undefined === true
+        // would incorrectly strip publicID from users who never explicitly disabled friend requests.
+        if (!profile.allowPublicFriendRequests && !isFriend && !isSelf) {
+            delete profile.publicID;
+        }
+
         res.status(200).json({ profile });
+
     } catch (error) {
         next(error);
     }
