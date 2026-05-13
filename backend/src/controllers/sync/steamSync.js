@@ -266,6 +266,7 @@ export const steamReturn = (req, res, next) => {
             }
 
             // 5. Final Save
+            dbUser.markModified('linkedAccounts');
             await dbUser.save();
 
             res.redirect(`${APP_FRONTEND_URL}/library`)

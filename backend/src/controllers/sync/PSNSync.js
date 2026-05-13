@@ -8,8 +8,8 @@ import logger from "../../utils/logger.js";
 import { hashId } from "../../utils/logSanitize.js";
 
 export const PSNloginWithNpsso = async (req, res, next) => {
+    const userId = req.session.userId;
     try {
-        const userId = req.session.userId;
         if (!userId) return res.status(401).json({ error: "User not authenticated" });
 
         const { npsso } = req.body;
@@ -184,6 +184,7 @@ export const PSNloginWithNpsso = async (req, res, next) => {
             friendBulkOps.length > 0 ? Friendship.bulkWrite(friendBulkOps, { ordered: false }) : Promise.resolve()
         ]);
 
+        dbUser.markModified('linkedAccounts');
         await dbUser.save();
 
         logger.info({ userId: hashId(userId) }, 'PSN multi-account sync completed');

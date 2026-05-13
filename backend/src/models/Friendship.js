@@ -52,7 +52,7 @@ FriendshipSchema.index({ userId: 1, source: 1 });
 // Unique index to prevent duplicate platform friendships (Steam/Xbox/Epic/PSN only).
 // partialFilterExpression excludes "User"-source records so null externalId never collides.
 FriendshipSchema.index(
-    { userId: 1, source: 1, externalId: 1 },
+    { userId: 1, source: 1, externalId: 1, linkedAccountId: 1 },
     {
         unique: true,
         partialFilterExpression: { source: { $in: ['Steam', 'Xbox', 'Epic', 'PSN'] } }

@@ -274,6 +274,7 @@ export async function xboxReturn(req, res) {
             friendBulkOps.length > 0 ? Friendship.bulkWrite(friendBulkOps, { ordered: false }) : Promise.resolve()
         ]);
 
+        dbUser.markModified('linkedAccounts');
         await dbUser.save();
 
         res.redirect(`${APP_FRONTEND_URL}/library`)

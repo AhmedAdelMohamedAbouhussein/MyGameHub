@@ -8,8 +8,8 @@ import { hashId } from "../../../utils/logSanitize.js";
  * @access  Private (Session-based)
  */
 export const setInitialPassword = async (req, res, next) => {
+    const userId = req.session.userId;
     try {
-        const userId = req.session.userId;
         const { password } = req.body;
 
         if (!userId) {
