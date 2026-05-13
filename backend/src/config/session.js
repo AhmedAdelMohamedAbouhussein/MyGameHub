@@ -16,8 +16,8 @@ const sessionMiddleware = session({
     //secure: config.nodeEnv === "production",
     //sameSite: config.nodeEnv === "production" ? "none" : "lax",
     // Forced to true/none for production cross-domain support
-    secure: true,
-    sameSite: "none",
+    secure: config.nodeEnv === "production",
+    sameSite: config.nodeEnv === "production" ? "none" : "lax",
     maxAge: 1000 * 60 * 60 * 24 // 1 day
   }
 });

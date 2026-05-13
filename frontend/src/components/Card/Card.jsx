@@ -41,12 +41,16 @@ function Card(props) {
         };
     }, []);
 
-    const platformIcon = {
-        steam: <FaSteam />,
-        epic: <SiEpicgames />,
-        xbox: <FaXbox />,
-        psn: <FaPlaystation />,
-        playstation: <FaPlaystation />,
+    const getPlatformIcon = (platform, size = 10) => {
+        const p = platform?.toLowerCase();
+        switch (p) {
+            case 'steam': return <FaSteam size={size} />;
+            case 'epic': return <SiEpicgames size={size} />;
+            case 'xbox': return <FaXbox size={size} />;
+            case 'psn':
+            case 'playstation': return <FaPlaystation size={size} />;
+            default: return <FaGamepad size={size} />;
+        }
     };
 
     const formatHours = (seconds) => {
@@ -88,7 +92,7 @@ function Card(props) {
                             <div className="flex -space-x-1.5">
                                 {platforms.map((p, i) => (
                                     <span key={i} className="text-accent bg-midnight-900 rounded-full p-0.5 border border-white/5 ring-2 ring-midnight-900/50" title={p}>
-                                        {platformIcon[p.toLowerCase()] || <FaGamepad size={10} />}
+                                        {getPlatformIcon(p, 10)}
                                     </span>
                                 ))}
                             </div>
@@ -134,7 +138,13 @@ function Card(props) {
                         <div className="pt-2 border-t border-white/5 flex items-center gap-2 overflow-x-auto no-scrollbar">
                             {owners.slice(0, 3).map((owner, i) => (
                                 <div key={i} className="flex-shrink-0 w-5 h-5 rounded-md bg-midnight-800 border border-white/5 flex items-center justify-center overflow-hidden" title={owner.accountName}>
-                                    {owner.avatar ? <img src={owner.avatar} className="w-full h-full object-cover" /> : <div className="text-[7px] font-black">{owner.accountName?.charAt(0)}</div>}
+                                    {owner.avatar ? (
+                                        <img src={owner.avatar} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="text-accent/80 group-hover:text-accent transition-colors">
+                                            {getPlatformIcon(owner.platform, 11)}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                             {owners.length > 3 && <span className="text-[8px] text-text-muted font-black">+{owners.length - 3}</span>}
