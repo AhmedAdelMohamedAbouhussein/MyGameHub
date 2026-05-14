@@ -9,6 +9,7 @@ import { useContext } from "react";
 import apiClient from "../../utils/apiClient.js";
 import LoadingScreen from "../../components/LoadingScreen/LoadingScreen.jsx";
 import { optimizeImage } from "../../utils/imageUtils.js";
+import SEO from "../../components/SEO/SEO.jsx";
 
 const fetchTopSellers = async () => {
   const response = await apiClient.get(`/games/landingpage`);
@@ -97,6 +98,10 @@ function LandingPage() {
 
   return (
     <div className="page-container bg-midnight-900 border-none">
+      <SEO 
+        title="Home" 
+        description="Unify your Steam, Xbox, PlayStation, and Epic Games library. Track achievements, monitor price drops, and manage your wishlist in one dashboard."
+      />
       <Header />
 
       <main className="flex-1">

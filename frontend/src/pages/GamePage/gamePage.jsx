@@ -10,6 +10,7 @@ import Header from "../../components/Header/Header.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
 import { FaCalendarAlt, FaClock, FaStar, FaExternalLinkAlt, FaTag, FaTools, FaBuilding, FaArrowRight, FaGamepad } from "react-icons/fa";
 import BackButton from "../../components/BackButton/BackButton";
+import SEO from "../../components/SEO/SEO.jsx";
 
 const STORE_COLORS = {
     "Steam": "bg-blue-600/20 border-blue-500/30 text-blue-400 hover:bg-blue-600/30",
@@ -90,6 +91,11 @@ const GamePage = () => {
 
     return (
         <div className="page-container bg-midnight-900 border-none overflow-x-hidden">
+            <SEO 
+                title={game.name} 
+                description={`Track ${game.name} achievements, check live price drops, and compare deals across Steam, Xbox, and PlayStation. Released on ${formatDate(game.released)}.`}
+                image={game.image}
+            />
             <Header />
 
             <main className="flex-1 relative">

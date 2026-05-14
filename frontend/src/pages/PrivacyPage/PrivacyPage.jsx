@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from '../../components/SEO/SEO.jsx';
 import './PrivacyPage.css';
 
 const PrivacyPage = () => {
@@ -7,6 +8,10 @@ const PrivacyPage = () => {
 
     return (
         <div className="privacy-container">
+            <SEO 
+                title="Privacy Policy" 
+                description="Read the GameHub Privacy Policy. Learn how we protect your account security, manage platform synchronization, and ensure your data remains secure and private."
+            />
             <div className="privacy-card">
                 <header className="privacy-header">
                     <h1>Privacy Policy</h1>

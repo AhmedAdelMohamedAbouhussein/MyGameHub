@@ -8,6 +8,7 @@ import LoadingScreen from "../../components/LoadingScreen/LoadingScreen.jsx";
 import { FaSearch, FaArrowRight } from "react-icons/fa";
 import { toast } from "sonner";
 import { optimizeImage } from "../../utils/imageUtils.js";
+import SEO from "../../components/SEO/SEO.jsx";
 
 const BrowseGamesPage = () => {
     const navigate = useNavigate();
@@ -51,6 +52,10 @@ const BrowseGamesPage = () => {
 
     return (
         <div className="page-container bg-midnight-900 border-none">
+            <SEO 
+                title="Browse Games" 
+                description="Discover and search through over 500,000 games. Compare prices, track achievement progress, and manage your cross-platform wishlist."
+            />
             <Header />
             <div className="flex-1 flex min-h-0">
 

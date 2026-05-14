@@ -10,6 +10,7 @@ import AuthContext from "../../contexts/AuthContext.jsx";
 
 import { FaSearch, FaGlobe, FaGamepad, FaHeart, FaBars, FaArrowRight } from "react-icons/fa";
 import BackButton from "../../components/BackButton/BackButton";
+import SEO from "../../components/SEO/SEO.jsx";
 
 function CommunityPage() {
     const { user } = useContext(AuthContext);
@@ -40,6 +41,10 @@ function CommunityPage() {
 
     return (
         <div className="page-container flex flex-col lg:flex-row h-screen overflow-hidden">
+            <SEO 
+                title="Community" 
+                description="Explore the global GameHub community. Discover top accounts, compare game collections, and connect with players worldwide."
+            />
 
             <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 <Header />

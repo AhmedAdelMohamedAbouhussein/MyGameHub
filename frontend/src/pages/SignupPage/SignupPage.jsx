@@ -10,6 +10,7 @@ import Header from "../../components/Header/Header.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
 import AuthContext from "../../contexts/AuthContext.jsx";
 import LoadingScreen from "../../components/LoadingScreen/LoadingScreen.jsx";
+import SEO from "../../components/SEO/SEO.jsx";
 
 function SignupPage() {
   const navigate = useNavigate();
@@ -124,6 +125,10 @@ function SignupPage() {
 
   return (
     <div className="min-h-screen bg-midnight-900 flex flex-col relative overflow-hidden">
+      <SEO 
+        title="Create Account" 
+        description="Join GameHub today to unify your gaming library across Steam, Xbox, PlayStation, and Epic Games. Track your achievements and never miss a price drop."
+      />
       {/* Premium ambient glows */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-accent/20 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-pink-500/10 blur-[120px] rounded-full pointer-events-none" />

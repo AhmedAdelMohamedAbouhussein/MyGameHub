@@ -11,6 +11,7 @@ import Header from "../../components/Header/Header.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
 import AuthContext from "../../contexts/AuthContext.jsx";
 import LoadingScreen from "../../components/LoadingScreen/LoadingScreen.jsx";
+import SEO from "../../components/SEO/SEO.jsx";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -150,6 +151,10 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen bg-midnight-900 flex flex-col relative overflow-hidden">
+      <SEO 
+        title="Sign In" 
+        description="Log in to your GameHub account to access your unified gaming library, track achievement progress, and manage your wishlist."
+      />
       {/* Premium ambient glows */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-accent/20 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none" />

@@ -11,6 +11,7 @@ import LoadingScreen from "../../components/LoadingScreen/LoadingScreen";
 
 import { FaArrowLeft, FaHeart, FaRegHeart, FaUserPlus, FaUserMinus, FaCheck, FaClock, FaGamepad, FaUsers, FaTrophy, FaAward } from "react-icons/fa";
 import BackButton from "../../components/BackButton/BackButton";
+import SEO from "../../components/SEO/SEO.jsx";
 
 function ViewProfilePage() {
     const { publicID } = useParams();
@@ -162,6 +163,11 @@ function ViewProfilePage() {
 
     return (
         <div className="min-h-screen flex flex-col relative bg-midnight-900 overflow-x-hidden">
+            <SEO 
+                title={`${name}'s Profile`} 
+                description={`View ${name}'s gaming collection on GameHub. Exploring ${totalGames} games with over ${Math.round(totalHours)} hours of playtime. ${bio ? bio.substring(0, 100) : ''}`}
+                image={profilePicture}
+            />
             {/* Dynamic Background */}
             {profileBackground && (
                 <>

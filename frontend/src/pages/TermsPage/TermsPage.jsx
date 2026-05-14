@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from '../../components/SEO/SEO.jsx';
 import '../PrivacyPage/PrivacyPage.css';
 
 const TermsPage = () => {
@@ -7,6 +8,10 @@ const TermsPage = () => {
 
     return (
         <div className="privacy-container">
+            <SEO 
+                title="Terms of Service" 
+                description="Read the GameHub Terms of Service. Understand your rights and responsibilities when using our unified gaming library and achievement tracking platform."
+            />
             <div className="privacy-card">
                 <header className="privacy-header">
                     <h1>Terms of Service</h1>
