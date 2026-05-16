@@ -6,8 +6,8 @@ WORKDIR /app
 # Copy dependency specifications
 COPY package*.json ./
 
-# Install dependencies ignoring peer conflicts (React 19 compatibility)
-RUN npm install --legacy-peer-deps
+# Install cleanly
+RUN npm install
 
 # Copy all frontend files
 COPY . .
