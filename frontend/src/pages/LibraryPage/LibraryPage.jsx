@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState, useMemo } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import apiClient from "../../utils/apiClient.js";
@@ -26,6 +26,7 @@ const refreshOwnedGames = async () => {
 
 function LibraryPage() {
   const { user } = useContext(AuthContext);
+  const queryClient = useQueryClient();
   const [mobileAsideOpen, setMobileAsideOpen] = useState(false);
   const [reauthErrors, setReauthErrors] = useState([]); // platforms needing re-sync
 
@@ -41,7 +42,7 @@ function LibraryPage() {
     queryKey: ["ownedGames"],
     queryFn: fetchOwnedGames,
     enabled: !!user,
-    staleTime: 1000 * 60 * 5
+    staleTime: 0
   });
 
   const {
@@ -58,7 +59,7 @@ function LibraryPage() {
       } else {
         toast.success("Library refreshed successfully!");
       }
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ["ownedGames"] });
     },
     onError: () => {
       toast.error("Failed to refresh library");
@@ -248,11 +249,10 @@ function LibraryPage() {
                   return (
                     <div
                       key={err.platform}
-                      className={`flex items-center justify-between gap-4 px-5 py-4 rounded-2xl border ${
-                        isPSN
-                          ? 'bg-blue-900/20 border-blue-500/30 text-blue-300'
-                          : 'bg-green-900/20 border-green-500/30 text-green-300'
-                      }`}
+                      className={`flex items-center justify-between gap-4 px-5 py-4 rounded-2xl border ${isPSN
+                        ? 'bg-blue-900/20 border-blue-500/30 text-blue-300'
+                        : 'bg-green-900/20 border-green-500/30 text-green-300'
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <FaExclamationTriangle className="shrink-0" size={16} />

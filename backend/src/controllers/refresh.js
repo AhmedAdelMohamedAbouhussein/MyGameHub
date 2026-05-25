@@ -34,14 +34,15 @@ export const refreshOwnedGames = async (req, res, next) => {
         for (const account of steamAccounts) {
             refreshTasks.push((async () => {
                 try {
-                    const ownedGames = await getOwnedGames(parseInt(account.accountId));
-                    const gamesWithAchievements = await getUserAchievements(parseInt(account.accountId), ownedGames);
+                    const ownedGames = await getOwnedGames(account.accountId);
+                    const gamesWithAchievements = await getUserAchievements(account.accountId, ownedGames);
                     await updateNormalizedGames(userId, gamesWithAchievements, account, "Steam");
+                    hasChanges = true;
                 } catch (error) {
-                    logger.error({ 
-                        message: error.message, 
+                    logger.error({
+                        message: error.message,
                         status: error.response?.status,
-                        accountId: hashId(account.accountId) 
+                        accountId: hashId(account.accountId)
                     }, 'Steam refresh error');
                     errors.push({ platform: 'Steam', account: account.accountId, message: error.message });
                 }
@@ -82,7 +83,7 @@ export const refreshOwnedGames = async (req, res, next) => {
 
                     const xstsToken = xstsRes.data.Token;
                     const userHash = userAuthRes.data.DisplayClaims.xui[0].uhs;
-                    
+
                     const noAchGames = await getXboxOwnedGames(account.accountId, userHash, xstsToken);
                     const games = await enrichOwnedGamesWithAchievements(account.accountId, noAchGames, userHash, xstsToken);
                     await updateNormalizedGames(userId, games, account, "Xbox");
@@ -93,10 +94,10 @@ export const refreshOwnedGames = async (req, res, next) => {
                         hasChanges = true;
                         errors.push({ platform: 'Xbox', account: account.accountId, requiresReauth: true });
                     } else {
-                        logger.error({ 
-                            message: error.message, 
+                        logger.error({
+                            message: error.message,
                             status: error.response?.status,
-                            accountId: hashId(account.accountId) 
+                            accountId: hashId(account.accountId)
                         }, 'Xbox refresh error');
                         errors.push({ platform: 'Xbox', account: account.accountId, message: error.message });
                     }
@@ -127,10 +128,10 @@ export const refreshOwnedGames = async (req, res, next) => {
                         hasChanges = true;
                         errors.push({ platform: 'PSN', account: account.accountId, requiresReauth: true });
                     } else {
-                        logger.error({ 
-                            message: error.message, 
+                        logger.error({
+                            message: error.message,
                             status: error.response?.status,
-                            accountId: hashId(account.accountId) 
+                            accountId: hashId(account.accountId)
                         }, 'PSN refresh error');
                         errors.push({ platform: 'PSN', account: account.accountId, message: error.message });
                     }
@@ -166,7 +167,7 @@ async function updateNormalizedGames(userId, freshGames, account, platform) {
 
     const mongoose = (await import('mongoose')).default;
     const userObjectId = new mongoose.Types.ObjectId(userId);
-    
+
     // Fetch all existing games for this platform once
     const existingGames = await UserGame.find({ userId: userObjectId, platform });
     const existingGamesMap = new Map(existingGames.map(g => [g.gameId, g]));
