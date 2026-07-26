@@ -52,7 +52,8 @@ export default
         gmail:
         {
             gmail: process.env.GMAIL,
-            password: process.env.GMAIL_PASSWORD
+            password: process.env.GMAIL_PASSWORD,
+            resendApiKey: process.env.RESEND_API_KEY,
         },
         azure:
         {

@@ -1,18 +1,8 @@
-import nodemailer from 'nodemailer';
 import OtpSchema from '../../models/Otp.js'
 import userModel from '../../models/User.js';
 import config from '../../config/env.js'
 import { generateOtpEmail } from '../../utils/emailTemplates.js';
-
-let transporter = nodemailer.createTransport({
-    service: "gmail",
-    port: 465,                // Usually 465 (SSL) or 587 (TLS)
-    secure: true,             // true for port 465, false for 587              
-    auth: {
-        user: config.gmail.gmail,
-        pass: config.gmail.password,
-    },
-})
+import { sendEmail } from '../../utils/emailSender.js';
 
 export async function sendOtpToUser({ userId, email, purpose, userName }) {
     try {
@@ -28,25 +18,18 @@ export async function sendOtpToUser({ userId, email, purpose, userName }) {
             deactivate_account: "Authorize Account Deactivation - GameHub"
         };
 
-        const mailOptions = {
-            from: `"GameHub Security" <${config.gmail.gmail}>`,
-            to: email,
-            subject: subjectMap[purpose] || "Security Verification - GameHub",
-            html: generateOtpEmail(userName, otp, purpose),
-            headers: {
-                'X-Priority': '1',
-                'X-Mailer': 'Nodemailer',
-                'Precedence': 'transactional',
-            }
-        }
-
         await OtpSchema.create({
             userId: userId,
             otp: otp,
             purpose: purpose,
         });
 
-        await transporter.sendMail(mailOptions);
+        await sendEmail({
+            from: '"GameHub Security" <noreply@my-gamehub.com>',
+            to: email,
+            subject: subjectMap[purpose] || "Security Verification - GameHub",
+            html: generateOtpEmail(userName, otp, purpose),
+        });
 
         const now = new Date();
 

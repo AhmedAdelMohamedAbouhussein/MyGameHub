@@ -1,5 +1,4 @@
 import cron from 'node-cron';
-import nodemailer from 'nodemailer';
 import User from '../models/User.js';
 import WishlistItem from '../models/WishlistItem.js';
 import axios from 'axios';
@@ -8,20 +7,11 @@ import Notification from '../models/Notification.js';
 import logger from './logger.js';
 import { maskEmail, hashId } from './logSanitize.js';
 import { generatePriceDropEmail, generateConsolidatedPriceDropEmail, generateAccountPurgedEmail, generateAdminReportEmail, generateTokenExpiredEmail } from './emailTemplates.js';
+import { sendEmail } from './emailSender.js';
 import { exchangeRefreshTokenForAuthTokens } from 'psn-api';
 import { isOAuthAuthFailure, needsRenewal } from './oauthHelpers.js';
 
 const ITAD_API_KEY = config.iTAD.apiKey;
-
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    port: 465,
-    secure: true,
-    auth: {
-        user: config.gmail.gmail,
-        pass: config.gmail.password,
-    },
-});
 
 /**
  * Runs every day at 08:00 AM
@@ -56,8 +46,8 @@ export const startAdminReportCron = () => {
 
             const targetEmail = config.personalEmail;
 
-            await transporter.sendMail({
-                from: `"GameHub Admin" <${config.gmail.gmail}>`,
+            await sendEmail({
+                from: '"GameHub Admin" <noreply@my-gamehub.com>',
                 to: targetEmail,
                 subject: "📊 Daily System Report - GameHub",
                 html: generateAdminReportEmail(metrics)
@@ -190,8 +180,8 @@ export const startWishlistCron = () => {
 
                     // 2. Consolidated Email notification
                     try {
-                        await transporter.sendMail({
-                            from: `"GameHub Deals" <${config.gmail.gmail}>`,
+                        await sendEmail({
+                            from: '"GameHub Deals" <noreply@my-gamehub.com>',
                             to: user.email,
                             subject: totalGames === 1 
                                 ? `💸 Price Drop: ${userPriceDrops[0].gameName} is cheaper now!` 
@@ -232,8 +222,8 @@ export const startPurgeCron = () => {
             for (const user of staleUsers) {
                 // Send farewell email BEFORE deleting (so we still have email/name)
                 try {
-                    await transporter.sendMail({
-                        from: `"GameHub" <${config.gmail.gmail}>`,
+                    await sendEmail({
+                        from: '"GameHub" <noreply@my-gamehub.com>',
                         to: user.email,
                         subject: "Your GameHub account has been permanently deleted",
                         html: generateAccountPurgedEmail(user.name)
@@ -339,8 +329,8 @@ export const startTokenRefreshCron = () => {
                             }
 
                             try {
-                                await transporter.sendMail({
-                                    from: `"GameHub" <${config.gmail.gmail}>`,
+                                await sendEmail({
+                                    from: '"GameHub" <noreply@my-gamehub.com>',
                                     to: user.email,
                                     subject: '⚠️ Your PlayStation session has expired — Re-sync required',
                                     html: generateTokenExpiredEmail(user.name, 'PSN', `${APP_URL}/library/sync/psn`)
@@ -413,8 +403,8 @@ export const startTokenRefreshCron = () => {
                             }
 
                             try {
-                                await transporter.sendMail({
-                                    from: `"GameHub" <${config.gmail.gmail}>`,
+                                await sendEmail({
+                                    from: '"GameHub" <noreply@my-gamehub.com>',
                                     to: user.email,
                                     subject: '⚠️ Your Xbox session has expired — Re-sync required',
                                     html: generateTokenExpiredEmail(user.name, 'Xbox', `${APP_URL}/library/sync/xbox`)
