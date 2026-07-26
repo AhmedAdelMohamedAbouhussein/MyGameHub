@@ -32,7 +32,12 @@ export async function sendOtpToUser({ userId, email, purpose, userName }) {
             from: `"GameHub Security" <${config.gmail.gmail}>`,
             to: email,
             subject: subjectMap[purpose] || "Security Verification - GameHub",
-            html: generateOtpEmail(userName, otp, purpose)
+            html: generateOtpEmail(userName, otp, purpose),
+            headers: {
+                'X-Priority': '1',
+                'X-Mailer': 'Nodemailer',
+                'Precedence': 'transactional',
+            }
         }
 
         await OtpSchema.create({
