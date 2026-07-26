@@ -22,7 +22,7 @@ const axiosClient = axios.create({
     timeout: 10000,
 });
 
-/**
+/** 
  * Fetch Epic friends using modern EOS v2 APIs
  * Scope: basic_profile, friends_list
  */
@@ -79,10 +79,10 @@ export async function getUserFriendList(accessToken, accountId, existingFriends 
         return result;
 
     } catch (error) {
-        logger.error({ 
-            accountId: hashId(accountId), 
-            message: error.message, 
-            status: error.response?.status 
+        logger.error({
+            accountId: hashId(accountId),
+            message: error.message,
+            status: error.response?.status
         }, 'Epic friends fetch failed');
         return [];
     }
