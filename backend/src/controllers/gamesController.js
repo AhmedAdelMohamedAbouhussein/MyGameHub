@@ -382,6 +382,11 @@ export const getLandingPageImages = async (req, res, next) => {
         await cacheSet(cacheKey, results, TTL_LANDING_PAGE);
         res.status(200).json(results);
     } catch (error) {
+        // ── RAWG is unavailable (timeout, 5xx, etc.) – serve local fallback ──
+        logger.warn({ err: error.message }, 'RAWG unavailable for landing page – using local fallback assets');
+        if (gameImages && gameImages.length > 0) {
+            return res.status(200).json(gameImages);
+        }
         next(error);
     }
 }
