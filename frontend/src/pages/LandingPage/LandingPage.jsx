@@ -153,7 +153,7 @@ function LandingPage() {
                 return (
                   <div
                     key={`${gameId}-${index}`}
-                    onClick={() => navigate(`/games/${gameId}`)}
+                    onClick={() => navigate(`/games/${gameId}?name=${encodeURIComponent(title)}`)}
                     className="
                       group relative flex-shrink-0
                       w-[240px] sm:w-[280px] md:w-[320px] lg:w-[360px]

@@ -113,10 +113,94 @@ export const getTopSellers = async (req, res, next) => {
     }
 };
 
+// ── ITAD enrichment helper ──────────────────────────────────────────────────────
+// Mutates `profile` in place: sets itadId, historyLow, deals.
+// Called from both the normal RAWG flow and the Steam fallback so pricing works either way.
+async function enrichWithITAD(profile, gameName, gameSlug = '') {
+    const ITAD_API_KEY = config.iTAD.apiKey;
+    if (!ITAD_API_KEY || !gameName) return;
+
+    try {
+        // 🔍 Search ITAD by name
+        const searchRes = await axiosClient.get(
+            'https://api.isthereanydeal.com/games/search/v1',
+            { params: { key: ITAD_API_KEY, title: gameName, results: 10 } }
+        );
+        if (!searchRes.data?.length) return;
+
+        // 🧠 Normalize + fuzzy-score titles
+        const normalize = (str) =>
+            str.toLowerCase()
+                .replace(/\(.*?\)/g, '')
+                .replace(/\b(game of the year|goty|edition|complete|bundle|definitive|remastered|redux)\b/g, '')
+                .replace(/[^a-z0-9]/g, '');
+
+        const normName = normalize(gameName);
+        const normSlug = normalize(gameSlug);
+
+        const scoreMatch = (a, b) => {
+            if (!a || !b) return 0;
+            if (a === b) return 100;
+            if (a.includes(b) || b.includes(a)) return 90;
+            let matches = 0;
+            for (let i = 0; i < Math.min(a.length, b.length); i++) {
+                if (a[i] === b[i]) matches++;
+            }
+            return (matches / Math.max(a.length, b.length)) * 100;
+        };
+
+        let bestMatch = null, bestScore = 0;
+        for (const g of searchRes.data) {
+            const itadName = normalize(g.title);
+            let score = scoreMatch(itadName, normName);
+            if (normSlug && itadName.includes(normSlug)) score += 10;
+            if (itadName.length > normName.length * 1.5) score -= 5;
+            if (score > bestScore) { bestScore = score; bestMatch = g; }
+        }
+
+        if (!bestMatch || bestScore < 65) {
+            logger.debug({ gameName }, 'No strong ITAD match, skipping deals');
+            return;
+        }
+
+        logger.debug({ title: bestMatch.title, score: bestScore }, 'Best ITAD match found');
+        profile.itadId = bestMatch.id;
+
+        // 💰 Fetch prices
+        const pricesRes = await axiosClient.post(
+            'https://api.isthereanydeal.com/games/prices/v3',
+            [bestMatch.id],
+            { params: { key: ITAD_API_KEY, country: 'US' } }
+        );
+        if (!pricesRes.data?.length) return;
+
+        const priceData = pricesRes.data[0];
+
+        if (priceData.historyLow) {
+            profile.historyLow = {
+                all: priceData.historyLow.all?.amount ?? null,
+                y1: priceData.historyLow.y1?.amount ?? null,
+                m3: priceData.historyLow.m3?.amount ?? null,
+            };
+        }
+        if (priceData.deals?.length > 0) {
+            profile.deals = priceData.deals.map(deal => ({
+                store: deal.shop?.name || 'Unknown',
+                price: deal.price?.amount ?? null,
+                storeLow: deal.storeLow?.amount ?? null,
+                url: deal.url
+            }));
+        }
+    } catch (err) {
+        logger.error({ message: err.message, status: err.response?.status }, 'ITAD enrichment failed');
+    }
+}
+
 // @desc  Get game details by ID (RAWG)
 // @route  GET /games/:id
 export const getOneGameDetails = async (req, res, next) => {
     const gameId = req.params.id;
+    const gameName = req.query.name; // Optional: sent by frontend as name fallback
 
     if (!gameId || gameId.trim() === '') {
         return next(new Error('Game ID is required'));
@@ -213,143 +297,8 @@ export const getOneGameDetails = async (req, res, next) => {
             logger.warn({ err }, 'RAWG trailer fetch failed');
         }
 
-        // 💰 ITAD Integration (Production-Grade Matching)
-        try {
-            const ITAD_API_KEY = config.iTAD.apiKey;
-
-            if (!ITAD_API_KEY) {
-                logger.warn({ gameId }, 'No ITAD API key provided, skipping price data');
-            } else {
-
-                // 🔍 Search ITAD
-                const searchRes = await axiosClient.get(
-                    "https://api.isthereanydeal.com/games/search/v1",
-                    {
-                        params: {
-                            key: ITAD_API_KEY,
-                            title: data.name,
-                            results: 10
-                        }
-                    }
-                );
-
-                if (searchRes.data?.length > 0) {
-
-                    // 🧠 Normalize titles (advanced)
-                    const normalize = (str) => {
-                        return str
-                            .toLowerCase()
-                            .replace(/\(.*?\)/g, '') // remove (2023), (Remake)
-                            .replace(/\b(game of the year|goty|edition|complete|bundle|definitive|remastered|redux)\b/g, '')
-                            .replace(/[^a-z0-9]/g, '');
-                    };
-
-                    const rawgName = normalize(data.name);
-                    const rawgSlug = normalize(data.slug || "");
-
-                    // 🎯 Scoring function (weighted)
-                    const scoreMatch = (a, b) => {
-                        if (!a || !b) return 0;
-
-                        if (a === b) return 100;
-
-                        if (a.includes(b) || b.includes(a)) return 90;
-
-                        let matches = 0;
-                        for (let i = 0; i < Math.min(a.length, b.length); i++) {
-                            if (a[i] === b[i]) matches++;
-                        }
-
-                        const baseScore = (matches / Math.max(a.length, b.length)) * 100;
-
-                        return baseScore;
-                    };
-
-                    // 🧠 Find BEST match with slug boost
-                    let bestMatch = null;
-                    let bestScore = 0;
-
-                    for (const g of searchRes.data) {
-                        const itadName = normalize(g.title);
-
-                        let score = scoreMatch(itadName, rawgName);
-
-                        // 🚀 BOOST if matches slug
-                        if (rawgSlug && itadName.includes(rawgSlug)) {
-                            score += 10;
-                        }
-
-                        // 🚀 Slight penalty for too long titles (often bundles/DLC)
-                        if (itadName.length > rawgName.length * 1.5) {
-                            score -= 5;
-                        }
-
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestMatch = g;
-                        }
-                    }
-
-                    // 🎯 Threshold
-                    const MATCH_THRESHOLD = 65;
-
-                    let selectedGame = null;
-
-                    if (bestMatch && bestScore >= MATCH_THRESHOLD) {
-                        logger.debug({ title: bestMatch.title, score: bestScore }, 'Best ITAD match found');
-                        selectedGame = bestMatch;
-                    } else {
-                        logger.debug({ gameName: data.name }, 'No strong ITAD match, skipping deals');
-                        selectedGame = null;
-                    }
-
-                    if (selectedGame) {
-                        gameProfile.itadId = selectedGame.id;
-                        logger.debug({ itadId: gameProfile.itadId }, 'ITAD ID resolved');
-                        // 💰 Fetch prices
-                        const pricesRes = await axiosClient.post(
-                            "https://api.isthereanydeal.com/games/prices/v3",
-                            [selectedGame.id],
-                            {
-                                params: {
-                                    key: ITAD_API_KEY,
-                                    country: "US"
-                                }
-                            }
-                        );
-
-                        if (pricesRes.data?.length > 0) {
-                            const priceData = pricesRes.data[0];
-
-                            // 📉 History Low
-                            if (priceData.historyLow) {
-                                gameProfile.historyLow = {
-                                    all: priceData.historyLow.all?.amount ?? null,
-                                    y1: priceData.historyLow.y1?.amount ?? null,
-                                    m3: priceData.historyLow.m3?.amount ?? null,
-                                };
-                            }
-
-                            // 🏷 Deals (with filtering)
-                            if (priceData.deals?.length > 0) {
-                                gameProfile.deals = priceData.deals.map(deal => ({
-                                    store: deal.shop?.name || "Unknown",
-                                    price: deal.price?.amount ?? null,
-                                    storeLow: deal.storeLow?.amount ?? null,
-                                    url: deal.url
-                                }));
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (itadErr) {
-            logger.error({
-                message: itadErr.message,
-                status: itadErr.response?.status,
-                details: itadErr.response?.data
-            }, 'ITAD fetch failed');
-        }
+        // 💰 ITAD enrichment (price data, deals, history low)
+        await enrichWithITAD(gameProfile, data.name, data.slug);
 
         // ── Store full profile in cache ───────────────────────────────────────
         await cacheSet(cacheKey, gameProfile, TTL_GAME_DETAILS);
@@ -357,10 +306,78 @@ export const getOneGameDetails = async (req, res, next) => {
         return res.json(gameProfile);
 
     } catch (error) {
+        const isRawgDown = !error.response || error.response.status >= 500;
+        const isWrongId = error.response?.status === 404;
+
+        // ── Steam fallback: triggered when RAWG is down OR the ID is invalid ──
+        if ((isRawgDown || isWrongId) && gameName) {
+            logger.warn({ gameId, gameName }, 'RAWG unavailable for game details – trying Steam fallback');
+            try {
+                // Run Steam search + ITAD + YouTube in parallel (all only need the name)
+                const itadData = {};
+                const [searchRes, , youtubeTrailer] = await Promise.all([
+                    axiosClient.get(
+                        `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(gameName)}&l=english&cc=US`
+                    ),
+                    enrichWithITAD(itadData, gameName),                            // mutates itadData
+                    getGameTrailer(`${gameName} official game trailer`).catch(() => null) // swallow YouTube errors
+                ]);
+                const steamAppId = searchRes.data?.items?.[0]?.id;
+
+                if (steamAppId) {
+                    // Fetch full Steam app details (needs steamAppId from storesearch)
+                    const detailsRes = await axiosClient.get(
+                        `https://store.steampowered.com/api/appdetails?appids=${steamAppId}&cc=us&l=en`
+                    );
+                    const sd = detailsRes.data?.[steamAppId]?.data;
+
+                    if (sd) {
+                        const stripHtml = (str) => str?.replace(/<[^>]*>/g, '').trim() || null;
+
+                        const fallbackProfile = {
+                            id: sd.steam_appid || steamAppId,
+                            name: sd.name,
+                            slug: null,
+                            description: sd.short_description || 'No description available.',
+                            minimumreq: stripHtml(sd.pc_requirements?.minimum),
+                            recommendedreq: stripHtml(sd.pc_requirements?.recommended),
+                            released: sd.release_date?.date || null,
+                            image: `https://steamcdn-a.akamaihd.net/steam/apps/${steamAppId}/library_600x900_2x.jpg`,
+                            metacritic: sd.metacritic?.score || null,
+                            playtime: null,
+                            developers: sd.developers || [],
+                            publishers: sd.publishers || [],
+                            genres: sd.genres?.map(g => g.description) || [],
+                            stores: [{
+                                storeId: 1,
+                                name: 'Steam',
+                                url: `https://store.steampowered.com/app/${steamAppId}`
+                            }],
+                            platforms: Object.entries(sd.platforms || {})
+                                .filter(([, v]) => v)
+                                .map(([k]) => k.charAt(0).toUpperCase() + k.slice(1)),
+                            // All fetched in parallel above — no extra latency
+                            itadId:       itadData.itadId    ?? null,
+                            historyLow:   itadData.historyLow ?? null,
+                            deals:        itadData.deals      ?? null,
+                            youtubeTrailer: youtubeTrailer    ?? null,
+                            rawgTrailer:  null, // RAWG-exclusive, unavailable in fallback
+                        };
+
+                        await cacheSet(cacheKey, fallbackProfile, 120);
+                        return res.json(fallbackProfile);
+                    }
+                }
+            } catch (steamErr) {
+                logger.warn({ err: steamErr.message, gameName }, 'Steam fallback for game details also failed');
+            }
+        }
+
         error.logContext = { gameId };
         next(error);
     }
 };
+
 
 // @desc  get landing page game images
 // @route  GET /games/landingpage
@@ -424,8 +441,30 @@ export const searchGames = async (req, res, next) => {
             next(new Error('Failed to fetch search results from RAWG'));
         }
     } catch (error) {
-        error.logContext = { query };
-        next(error);
+        // ── RAWG unavailable – fall back to Steam Store Search API ───────────
+        logger.warn({ err: error.message, query }, 'RAWG unavailable for search – falling back to Steam Store Search');
+        try {
+            const steamRes = await axiosClient.get(
+                `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(query)}&l=english&cc=US`
+            );
+            const steamItems = steamRes.data?.items || [];
+            if (steamItems.length > 0) {
+                const fallback = steamItems.map(g => ({
+                    id: g.id,
+                    name: g.name,
+                    image: `https://steamcdn-a.akamaihd.net/steam/apps/${g.id}/library_600x900_2x.jpg`,
+                    rating: null,
+                    genres: [],
+                    released: 'N/A'
+                }));
+                await cacheSet(cacheKey, fallback, 120); // short TTL so RAWG data refreshes quickly
+                return res.status(200).json(fallback);
+            }
+        } catch (steamError) {
+            logger.warn({ err: steamError.message, query }, 'Steam Store Search also failed');
+        }
+        // Both APIs down — return empty so frontend shows its empty state gracefully
+        return res.status(200).json([]);
     }
 };
 

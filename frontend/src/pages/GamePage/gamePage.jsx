@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import apiClient from "../../utils/apiClient.js";
@@ -33,14 +33,17 @@ function formatDate(dateStr) {
     });
 }
 
-const fetchGame = async (id) => {
-    const response = await apiClient.get(`/games/${id}`);
+const fetchGame = async (id, name) => {
+    const url = name ? `/games/${id}?name=${encodeURIComponent(name)}` : `/games/${id}`;
+    const response = await apiClient.get(url);
     return response.data;
 };
 
 const GamePage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const gameName = searchParams.get('name');
 
     const {
         data: game,
@@ -49,7 +52,7 @@ const GamePage = () => {
         error
     } = useQuery({
         queryKey: ["game", id],
-        queryFn: () => fetchGame(id),
+        queryFn: () => fetchGame(id, gameName),
         enabled: !!id,
         staleTime: 1000 * 60 * 5,
         retry: 2
@@ -91,8 +94,8 @@ const GamePage = () => {
 
     return (
         <div className="page-container bg-midnight-900 border-none overflow-x-hidden">
-            <SEO 
-                title={game.name} 
+            <SEO
+                title={game.name}
                 description={`Track ${game.name} achievements, check live price drops, and compare deals across Steam, Xbox, and PlayStation. Released on ${formatDate(game.released)}.`}
                 image={game.image}
             />
@@ -450,7 +453,7 @@ const GamePage = () => {
                                         {game.stores.map((storeConfig, idx) => {
                                             const storeColorClass = STORE_COLORS[storeConfig.name] || 'bg-midnight-700/50 border-white/5 hover:bg-midnight-600';
                                             const commonClasses = `flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl border text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all ${storeColorClass}`;
-                                            
+
                                             if (storeConfig.url) {
                                                 return (
                                                     <a
@@ -465,7 +468,7 @@ const GamePage = () => {
                                                     </a>
                                                 );
                                             }
-                                            
+
                                             return (
                                                 <div key={idx} className={commonClasses}>
                                                     <span>{storeConfig.name}</span>

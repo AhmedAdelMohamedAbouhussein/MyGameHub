@@ -47,7 +47,7 @@ const BrowseGamesPage = () => {
 
     const handleGameClick = (game) => {
         const id = game.id;
-        navigate(`/games/${id}`);
+        navigate(`/games/${id}?name=${encodeURIComponent(game.name)}`);
     };
 
     return (

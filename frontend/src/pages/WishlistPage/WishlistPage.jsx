@@ -101,7 +101,7 @@ const WishlistPage = () => {
                                     <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
                                         <div className="space-y-4">
                                             <h3
-                                                onClick={() => navigate(`/games/${game.id}`)}
+                                                onClick={() => navigate(`/games/${game.id}?name=${encodeURIComponent(game.name)}`)}
                                                 className="text-lg font-black text-white uppercase tracking-tight line-clamp-1 group-hover:text-accent transition-colors cursor-pointer"
                                             >
                                                 {game.name}
@@ -179,7 +179,7 @@ const WishlistPage = () => {
                                         </div>
 
                                         <button
-                                            onClick={() => navigate(`/games/${game.id}`)}
+                                            onClick={() => navigate(`/games/${game.id}?name=${encodeURIComponent(game.name)}`)}
                                             className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-midnight-900 border border-white/5 text-[10px] font-black text-text-muted uppercase tracking-[0.2em] hover:text-white hover:bg-midnight-800 hover:border-accent/40 transition-all group/link shadow-inner"
                                         >
                                             View game Intel <FaArrowRight className="group-hover/link:translate-x-1 transition-transform text-accent" />
