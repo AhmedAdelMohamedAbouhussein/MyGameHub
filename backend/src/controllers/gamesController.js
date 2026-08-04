@@ -7,8 +7,8 @@ import logger from "../utils/logger.js";
 
 const RAWG_API_KEY = config.RAWG_API_KEY;
 
-// ── Shared axios client with 8s timeout ──────────────────────────────────────
-const axiosClient = axios.create({ timeout: 8000 });
+// ── Shared axios client with 5s timeout ──────────────────────────────────────
+const axiosClient = axios.create({ timeout: 5000 });
 
 // ── Cache TTLs (seconds) ──────────────────────────────────────────────────────
 const TTL_GAME_DETAILS = 3600;  // 1 hour
